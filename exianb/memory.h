@@ -149,7 +149,7 @@ bool read_process_memory(
     if(isWrite) {
         if(!vma || (vma->vm_flags & VM_WRITE) == 0 || (addr + size) > vma->vm_end){
             mmput(mm);
-            pr_err("read_process_memory vma failed.\n");
+            pr_err("read_process_memory vma failed (write).\n");
             return false;
 	}
     } else {
