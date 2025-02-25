@@ -1,4 +1,4 @@
-name: Build Multiple LKM
+name: Build Multiple LKM Proc
 on:
   workflow_dispatch:
 
