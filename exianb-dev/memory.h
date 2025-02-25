@@ -120,7 +120,8 @@ bool read_process_memory(
     pid_t pid, 
     uintptr_t addr, 
     void* buffer, 
-    size_t size) {
+    size_t size,
+    bool isWrite) {
     
     struct task_struct* task;
     struct mm_struct* mm;
@@ -145,10 +146,18 @@ bool read_process_memory(
         return false;
     }
     vma = find_vma(mm, addr);
-    if(!vma || (vma->vm_flags & VM_READ) == 0 || (addr + size) > vma->vm_end){
-        mmput(mm);
-        pr_err("read_process_memory vma failed.\n");
-        return false;
+    if(isWrite) {
+        if(!vma || (vma->vm_flags & VM_WRITE) == 0 || (addr + size) > vma->vm_end){
+            mmput(mm);
+            pr_err("read_process_memory vma failed.\n");
+            return false;
+	}
+    } else {
+        if(!vma || (vma->vm_flags & VM_READ) == 0 || (addr + size) > vma->vm_end){
+            mmput(mm);
+            pr_err("read_process_memory vma failed.\n");
+            return false;
+        }
     }
     mmput(mm);
     pa = translate_linear_address(mm, addr);
