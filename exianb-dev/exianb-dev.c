@@ -49,7 +49,19 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
                     pr_err("OP_READ_MEM copy_from_user failed.\n");
                     return -1;
                 }
-                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size) == false) {
+                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, false) == false) {
+                    pr_err("OP_READ_MEM read_process_memory failed.\n");
+                    return -1;
+                }
+            }
+            break;
+	case OP_RW_MEM:
+            {
+                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
+                    pr_err("OP_READ_MEM copy_from_user failed.\n");
+                    return -1;
+                }
+                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, true) == false) {
                     pr_err("OP_READ_MEM read_process_memory failed.\n");
                     return -1;
                 }
