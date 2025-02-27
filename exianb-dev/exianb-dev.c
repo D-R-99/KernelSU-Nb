@@ -148,7 +148,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     void __user *argp;
     struct ioctl_cf cf;
     unsigned long request;
-    unsigned long arg;
+    // unsigned long arg;
     int new_fd;
 
     /* Check if the syscall is ioctl (syscall number 29) */
