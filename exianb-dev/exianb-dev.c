@@ -136,15 +136,53 @@ struct miscdevice misc = {
 
 static struct kprobe kp;
 
-/* Kprobe handler function */
+/* Structure for user data */
+struct ioctl_cf {
+    int fd;
+    char name[15];
+};
+
+/* Pre-handler for the kprobe */
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    if (regs->regs[8] == 29) {  // x8 register contains syscall number
-        pr_info("driverX: Syscall ioctl (29) called!\n");
+    void __user *argp;
+    struct ioctl_cf cf;
+    unsigned long request;
+    unsigned long arg;
+    int new_fd;
+
+    /* Check if the syscall is ioctl (syscall number 29) */
+    if (regs->regs[8] == 29) {
+        request = regs->regs[1];  // x1 contains the ioctl request code
+        argp = (void __user *)regs->regs[2]; // x2 contains user-space argument pointer
+
+        /* Check if the request is 0x666 */
+        if (request == 0x666) {
+            unsigned long fd_address = regs->regs[0]; // x0 contains file descriptor structure pointer
+            
+            /* Verify that the request memory location is accessible */
+            if (fd_address && !copy_from_user(&cf, (void __user *)(fd_address + 16), sizeof(cf))) {
+                pr_info("Intercepted ioctl(0x666) - Creating anonymous inode\n");
+
+                /* Create an anonymous inode */
+                new_fd = anon_inode_getfd(cf.name, &dispatch_functions, 0, 2);
+                if (new_fd >= 0) {
+                    cf.fd = new_fd;
+
+                    /* Write back to user-space */
+                    if (copy_to_user((void __user *)(fd_address + 16), &cf, sizeof(cf))) {
+                        pr_err("Failed to copy data back to user-space\n");
+                    } else {
+                        pr_info("Anon inode created with fd: %d\n", new_fd);
+                    }
+                } else {
+                    pr_err("Failed to create anonymous inode\n");
+                }
+            }
+        }
     }
     return 0;
 }
-
 static struct list_head *module_prev;         // Store previous module position
 static struct kobject *kobject_prev;          // Store previous kobject
 static struct kobject *kobject_parent_prev;   // Store parent kobject
