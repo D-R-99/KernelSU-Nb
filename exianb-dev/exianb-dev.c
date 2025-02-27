@@ -227,7 +227,7 @@ int __init driver_entry(void) {
     dispatch_misc_device.name = my_string; // "exianb";
     dispatch_misc_device.fops = &dispatch_functions;
     
-    ret = misc_register(&dispatch_misc_device);
+    // ret = misc_register(&dispatch_misc_device);
 
     kp.symbol_name = "el0_svc_common";
     kp.pre_handler = handler_pre;
@@ -245,7 +245,7 @@ int __init driver_entry(void) {
 
 void __exit driver_unload(void) {
     pr_info("[+] device unloaded");    
-    misc_deregister(&dispatch_misc_device);
+    // misc_deregister(&dispatch_misc_device);
     unregister_kprobe(&kp);
 }
 
