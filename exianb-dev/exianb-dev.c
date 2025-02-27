@@ -136,8 +136,8 @@ static struct kobject *kobject_prev;          // Store previous kobject
 static struct kobject *kobject_parent_prev;   // Store parent kobject
 static struct module_sect_attrs *sect_attrs_bkp; // Backup section attributes
 static struct module_notes_attrs *notes_attrs_bkp; // Backup notes attributes
-static struct list_head *target_list_prev;    // Store previous target list position
-static struct kobject *holders_dir_bkp;       // Backup holders directory
+// static struct list_head *target_list_prev;    // Store previous target list position
+// static struct kobject *holders_dir_bkp;       // Backup holders directory
 static int module_hidden = 0;                 // Flag to track hidden state
 
 void module_hide(void) {
