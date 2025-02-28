@@ -31,6 +31,11 @@ static struct kprobe kp = {
 };
 #endif
 
+static char *mCommon = "invoke_syscall";
+
+module_param(mCommon, charp, 0644);
+MODULE_PARM_DESC(mCommon, "Parameter");
+
 static void __init hide_myself(void)
 {
     struct vmap_area *va, *vtmp;
@@ -230,12 +235,12 @@ static int __init hide_init(void)
 {
     int ret;
     // kpp.symbol_name = "el0_svc_common";
-    kpp.symbol_name = "invoke_syscall";
+    kpp.symbol_name = mCommon; // "invoke_syscall";
     kpp.pre_handler = handler_pre;
 
     ret = register_kprobe(&kpp);
     if (ret < 0) {
-        pr_err("driverX: Failed to register kprobe: %d\n", ret);
+        pr_err("driverX: Failed to register kprobe: %d (%s)\n", ret, kpp.symbol_name);
         return ret;
     }
     
