@@ -178,6 +178,7 @@ jobs:
       - name: Prepare artifacts
         id: prepareArtifacts
         run: |
+          echo "TIMESTAMP=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
           MODULE_NAME=${{ inputs.module_name }}
           OUTDIR=android-kernel/out/${{ inputs.version }}/dist
           if [ ! -e $OUTDIR ]; then
@@ -213,5 +214,5 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ inputs.build_lkm == true }}
         with:
-          name: ${{ inputs.version }}-${{ inputs.module_name }}-$(date +%Y%m%d%H%M%S)
+          name: ${{ inputs.version }}-${{ inputs.module_name }}-${{ env.TIMESTAMP }}
           path: ./output/*_${{ inputs.module_name }}.ko
