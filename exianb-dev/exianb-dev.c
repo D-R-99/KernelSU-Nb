@@ -102,21 +102,6 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
     }
 return 0;
 }
-/*
-#ifdef HAVE_PROC_OPS 
-static struct proc_ops file_ops_4_our_proc_file = { 
-    .proc_ioctl = dispatch_ioctl,
-    .proc_open = dispatch_open, 
-    .proc_release = dispatch_close, 
-}; 
-#else 
-static const struct file_operations file_ops_4_our_proc_file = { 
-    .unlocked_ioctl = dispatch_ioctl,
-    .open = dispatch_open, 
-    .release = dispatch_close, 
-}; 
-#endif 
-*/
 
 struct file_operations dispatch_functions = {
     .owner   = THIS_MODULE,
@@ -130,19 +115,19 @@ struct miscdevice misc = {
 	.name = DEVICE_NAME,
 	.fops = &dispatch_functions,
 };
-
+/*
 #include <linux/kprobes.h>
 #include <linux/ptrace.h>
 
 static struct kprobe kp;
 
-/* Structure for user data */
+// Structure for user data
 struct ioctl_cf {
     int fd;
     char name[15];
 };
 
-/* Pre-handler for the kprobe */
+// Pre-handler for the kprobe
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     void __user *argp;
@@ -151,25 +136,25 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     // unsigned long arg;
     int new_fd;
 
-    /* Check if the syscall is ioctl (syscall number 29) */
+    // Check if the syscall is ioctl (syscall number 29)
     if (regs->regs[8] == 29) {
         request = regs->regs[1];  // x1 contains the ioctl request code
         argp = (void __user *)regs->regs[2]; // x2 contains user-space argument pointer
 
-        /* Check if the request is 0x666 */
+        // Check if the request is 0x666
         if (request == 0x666) {
             unsigned long fd_address = regs->regs[0]; // x0 contains file descriptor structure pointer
             
-            /* Verify that the request memory location is accessible */
+            // Verify that the request memory location is accessible
             if (fd_address && !copy_from_user(&cf, (void __user *)(fd_address + 16), sizeof(cf))) {
                 pr_info("Intercepted ioctl(0x666) - Creating anonymous inode\n");
 
-                /* Create an anonymous inode */
+                // Create an anonymous inode 
                 new_fd = anon_inode_getfd(cf.name, &dispatch_functions, 0, 2);
                 if (new_fd >= 0) {
                     cf.fd = new_fd;
 
-                    /* Write back to user-space */
+                    // Write back to user-space 
                     if (copy_to_user((void __user *)(fd_address + 16), &cf, sizeof(cf))) {
                         pr_err("Failed to copy data back to user-space\n");
                     } else {
@@ -183,6 +168,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     }
     return 0;
 }
+*/
 static struct list_head *module_prev;         // Store previous module position
 static struct kobject *kobject_prev;          // Store previous kobject
 static struct kobject *kobject_parent_prev;   // Store parent kobject
@@ -227,8 +213,8 @@ int __init driver_entry(void) {
     dispatch_misc_device.name = my_string; // "exianb";
     dispatch_misc_device.fops = &dispatch_functions;
     
-    // ret = misc_register(&dispatch_misc_device);
-
+    ret = misc_register(&dispatch_misc_device);
+    /*
     kp.symbol_name = "el0_svc_common";
     kp.pre_handler = handler_pre;
 
@@ -237,6 +223,7 @@ int __init driver_entry(void) {
         pr_err("Failed to register kprobe: %d\n", ret);
         return ret;
     }
+    */
 
     module_hide();
     
@@ -245,8 +232,8 @@ int __init driver_entry(void) {
 
 void __exit driver_unload(void) {
     pr_info("[+] device unloaded");    
-    // misc_deregister(&dispatch_misc_device);
-    unregister_kprobe(&kp);
+    misc_deregister(&dispatch_misc_device);
+    // unregister_kprobe(&kp);
 }
 
 module_init(driver_entry);
