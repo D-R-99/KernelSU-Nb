@@ -197,7 +197,7 @@ void module_hide(void) {
     notes_attrs_bkp = THIS_MODULE->notes_attrs;
 
     struct vmap_area *va, *vtmp;
-    struct module_use *use, *tmp;
+    // struct module_use *use, *tmp;
     struct list_head *_vmap_area_list;
     struct rb_root *_vmap_area_root;
 
