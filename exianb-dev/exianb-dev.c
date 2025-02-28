@@ -2,8 +2,27 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <linux/module.h>
+#include <linux/tty.h>
+#include <linux/miscdevice.h>
+#include "comm.h"
+#include "memory.h"
+#include "process.h"
 
-#include <linux/version.h>
+#include <linux/kernel.h> 
+#include <linux/proc_fs.h> 
+#include <linux/sched.h> 
+#include <linux/uaccess.h> 
+#include <linux/version.h> 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) 
+#include <linux/minmax.h> 
+#endif 
+#include <linux/init.h>
+#include <linux/kobject.h>
+#include <linux/list.h>
+#include <linux/slab.h>
+#include <linux/sysfs.h>
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 #define KPROBE_LOOKUP 1
 #include <linux/kprobes.h>
@@ -57,6 +76,81 @@ static void __init hide_myself(void)
     }
 }
 
+int dispatch_open(struct inode *node, struct file *file) {
+    return 0;
+}
+
+int dispatch_close(struct inode *node, struct file *file) {
+    return 0;
+}
+
+long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned long const arg) {
+    static COPY_MEMORY cm;
+    static MODULE_BASE mb;
+    static char name[0x100] = {0};
+
+    switch (cmd) {
+        case OP_READ_MEM:
+            {
+                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
+                    pr_err("OP_READ_MEM copy_from_user failed.\n");
+                    return -1;
+                }
+                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, false) == false) {
+                    pr_err("OP_READ_MEM read_process_memory failed.\n");
+                    return -1;
+                }
+            }
+            break;
+	case OP_RW_MEM:
+            {
+                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
+                    pr_err("OP_READ_MEM copy_from_user failed.\n");
+                    return -1;
+                }
+                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, true) == false) {
+                    pr_err("OP_READ_MEM read_process_memory failed.\n");
+                    return -1;
+                }
+            }
+            break;
+        case OP_WRITE_MEM:
+            {
+                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
+                    return -1;
+                }
+                if (write_process_memory(cm.pid, cm.addr, cm.buffer, cm.size) == false) {
+                    return -1;
+                }
+            }
+            break;
+        case OP_MODULE_BASE:
+            {
+                if (copy_from_user(&mb, (void __user*)arg, sizeof(mb)) != 0 
+                ||  copy_from_user(name, (void __user*)mb.name, sizeof(name)-1) !=0) {
+                    pr_err("OP_MODULE_BASE copy_from_user failed.\n");
+                    return -1;
+                }
+                mb.base = get_module_base(mb.pid, name);
+                if (copy_to_user((void __user*)arg, &mb, sizeof(mb)) !=0) {
+                    pr_err("OP_MODULE_BASE copy_to_user failed.\n");
+                    return -1;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+return 0;
+}
+
+struct file_operations dispatch_functions = {
+    .owner   = THIS_MODULE,
+    .open    = dispatch_open,
+    .release = dispatch_close,
+    .unlocked_ioctl = dispatch_ioctl,
+};
+
 static struct kprobe kpp;
 
 // Structure for user data
@@ -65,17 +159,32 @@ struct ioctl_cf {
     char name[15];
 };
 
+struct ioctl_cf cf;
+
+int filedescription;
+
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
-{
-    // Check if the syscall is ioctl (syscall number 29)
-    // printk("driverX: hook called %d", (int) regs->regs[8]);
-    /* if (regs->regs[8] == 29) {
-        printk("driverX: ioctl called");
-    } */
+{  
+    uint64_t v4; 
+    int v5;
+    
     if ((uint32_t)(regs->regs[1]) == 29) {
         // printk("driverX: ioctl called");
+        v4 = regs->user_regs.regs[0];
         if (*(uint32_t *)(regs->user_regs.regs[0] + 8) == 1638) {
             printk("driverX: ioctl called with 0x666");
+
+            if (!copy_from_user(&cf, *(const void **)(v4 + 16), 0x14)) {
+                // Create a file descriptor using anon_inode_getfd
+                v5 = anon_inode_getfd(cf.name, &dispatch_functions, 0LL, 2LL);
+                filedescription = v5;
+
+                // If the file descriptor is valid (>= 1), update cf.fd and copy back to user space
+                if (v5 >= 1) {
+                    cf.fd = v5;
+                    copy_to_user(*(void **)(v4 + 16), &cf, 0x14);
+                }
+            }
         }
     }
     return 0;
