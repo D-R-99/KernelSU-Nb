@@ -227,7 +227,7 @@ static int __init hide_init(void)
 {
     int ret;
     // kpp.symbol_name = "el0_svc_common";
-    kpp.symbol_name = "do_el0_svc";
+    kpp.symbol_name = "invoke_syscall";
     kpp.pre_handler = handler_pre;
 
     ret = register_kprobe(&kpp);
