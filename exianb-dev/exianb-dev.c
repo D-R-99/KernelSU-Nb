@@ -1,29 +1,9 @@
+#include <linux/kallsyms.h>
 #include <linux/module.h>
-#include <linux/tty.h>
-#include <linux/miscdevice.h>
-#include "comm.h"
-#include "memory.h"
-#include "process.h"
+#include <linux/slab.h>
+#include <linux/vmalloc.h>
 
-#include <linux/kernel.h> 
-#include <linux/module.h> 
-#include <linux/proc_fs.h> 
-#include <linux/sched.h> 
-#include <linux/uaccess.h> 
-#include <linux/version.h> 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0) 
-#include <linux/minmax.h> 
-#endif 
-#include <linux/init.h>
-#include <linux/kobject.h>
-#include <linux/list.h>
-#include <linux/slab.h>     // Memory allocation (kfree)
-#include <linux/sysfs.h>    // Sysfs management
- 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0) 
-#define HAVE_PROC_OPS 
-#endif 
-
+#include <linux/version.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 #define KPROBE_LOOKUP 1
 #include <linux/kprobes.h>
@@ -31,176 +11,18 @@ static struct kprobe kp = {
     .symbol_name = "kallsyms_lookup_name",
 };
 #endif
- 
-#define PROCFS_MAX_SIZE 2048UL 
-#define PROCFS_ENTRY_FILENAME "exianb" 
-#define DEVICE_NAME "exianb"
-static char *my_string = "exianb";
-// static struct proc_dir_entry *our_proc_file; 
 
-static struct miscdevice dispatch_misc_device;
-module_param(my_string, charp, 0644); // String parameter
-MODULE_PARM_DESC(my_string, "Parameter");
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("National Cheng Kung University, Taiwan");
+MODULE_DESCRIPTION("Catch Me If You Can");
 
-int dispatch_open(struct inode *node, struct file *file) {
-    return 0;
-}
-
-int dispatch_close(struct inode *node, struct file *file) {
-    return 0;
-}
-
-long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned long const arg) {
-    static COPY_MEMORY cm;
-    static MODULE_BASE mb;
-    static char name[0x100] = {0};
-
-    switch (cmd) {
-        case OP_READ_MEM:
-            {
-                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    pr_err("OP_READ_MEM copy_from_user failed.\n");
-                    return -1;
-                }
-                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, false) == false) {
-                    pr_err("OP_READ_MEM read_process_memory failed.\n");
-                    return -1;
-                }
-            }
-            break;
-	case OP_RW_MEM:
-            {
-                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    pr_err("OP_READ_MEM copy_from_user failed.\n");
-                    return -1;
-                }
-                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, true) == false) {
-                    pr_err("OP_READ_MEM read_process_memory failed.\n");
-                    return -1;
-                }
-            }
-            break;
-        case OP_WRITE_MEM:
-            {
-                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    return -1;
-                }
-                if (write_process_memory(cm.pid, cm.addr, cm.buffer, cm.size) == false) {
-                    return -1;
-                }
-            }
-            break;
-        case OP_MODULE_BASE:
-            {
-                if (copy_from_user(&mb, (void __user*)arg, sizeof(mb)) != 0 
-                ||  copy_from_user(name, (void __user*)mb.name, sizeof(name)-1) !=0) {
-                    pr_err("OP_MODULE_BASE copy_from_user failed.\n");
-                    return -1;
-                }
-                mb.base = get_module_base(mb.pid, name);
-                if (copy_to_user((void __user*)arg, &mb, sizeof(mb)) !=0) {
-                    pr_err("OP_MODULE_BASE copy_to_user failed.\n");
-                    return -1;
-                }
-            }
-            break;
-        default:
-            break;
-    }
-return 0;
-}
-
-struct file_operations dispatch_functions = {
-    .owner   = THIS_MODULE,
-    .open    = dispatch_open,
-    .release = dispatch_close,
-    .unlocked_ioctl = dispatch_ioctl,
-};
-
-struct miscdevice misc = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = DEVICE_NAME,
-	.fops = &dispatch_functions,
-};
-/*
-#include <linux/kprobes.h>
-#include <linux/ptrace.h>
-
-static struct kprobe kp;
-
-// Structure for user data
-struct ioctl_cf {
-    int fd;
-    char name[15];
-};
-
-// Pre-handler for the kprobe
-static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+static void __init hide_myself(void)
 {
-    void __user *argp;
-    struct ioctl_cf cf;
-    unsigned long request;
-    // unsigned long arg;
-    int new_fd;
+    struct vmap_area *va, *vtmp;
+    struct module_use *use, *tmp;
+    struct list_head *_vmap_area_list;
+    struct rb_root *_vmap_area_root;
 
-    // Check if the syscall is ioctl (syscall number 29)
-    if (regs->regs[8] == 29) {
-        request = regs->regs[1];  // x1 contains the ioctl request code
-        argp = (void __user *)regs->regs[2]; // x2 contains user-space argument pointer
-
-        // Check if the request is 0x666
-        if (request == 0x666) {
-            unsigned long fd_address = regs->regs[0]; // x0 contains file descriptor structure pointer
-            
-            // Verify that the request memory location is accessible
-            if (fd_address && !copy_from_user(&cf, (void __user *)(fd_address + 16), sizeof(cf))) {
-                pr_info("Intercepted ioctl(0x666) - Creating anonymous inode\n");
-
-                // Create an anonymous inode 
-                new_fd = anon_inode_getfd(cf.name, &dispatch_functions, 0, 2);
-                if (new_fd >= 0) {
-                    cf.fd = new_fd;
-
-                    // Write back to user-space 
-                    if (copy_to_user((void __user *)(fd_address + 16), &cf, sizeof(cf))) {
-                        pr_err("Failed to copy data back to user-space\n");
-                    } else {
-                        pr_info("Anon inode created with fd: %d\n", new_fd);
-                    }
-                } else {
-                    pr_err("Failed to create anonymous inode\n");
-                }
-            }
-        }
-    }
-    return 0;
-}
-*/
-static struct list_head *module_prev;         // Store previous module position
-static struct kobject *kobject_prev;          // Store previous kobject
-static struct kobject *kobject_parent_prev;   // Store parent kobject
-static struct module_sect_attrs *sect_attrs_bkp;
-static struct module_notes_attrs *notes_attrs_bkp;
-static int module_hidden = 0;                 // Flag for module state
-
-void module_hide(void) {
-    if (module_hidden) // If already hidden, return
-        return;
-
-    // Store the module’s original list position and kobject references
-    module_prev = THIS_MODULE->list.prev;
-    kobject_prev = &THIS_MODULE->mkobj.kobj;
-    kobject_parent_prev = THIS_MODULE->mkobj.kobj.parent;
-
-    // Backup section and notes attributes
-    sect_attrs_bkp = THIS_MODULE->sect_attrs;
-    notes_attrs_bkp = THIS_MODULE->notes_attrs;
-
-    // struct vmap_area *va, *vtmp;
-    // struct module_use *use, *tmp;
-    // struct list_head *_vmap_area_list;
-    // struct rb_root *_vmap_area_root;
-/*
 #ifdef KPROBE_LOOKUP
     unsigned long (*kallsyms_lookup_name)(const char *name);
     if (register_kprobe(&kp) < 0)
@@ -209,39 +31,27 @@ void module_hide(void) {
     unregister_kprobe(&kp);
 #endif
 
-    if(!kallsyms_lookup_name) {
-	pr_info("[+] kallsyms_lookup not found");
-	return;
-    }
-
     _vmap_area_list =
         (struct list_head *) kallsyms_lookup_name("vmap_area_list");
     _vmap_area_root = (struct rb_root *) kallsyms_lookup_name("vmap_area_root");
 
-   if(!_vmap_area_list | !_vmap_area_root) {
-	pr_info("[+] vmap noobs not found");
-	return;
-   }
-   */
-    /*
-    // hidden from /proc/vmallocinfo 
+    /* hidden from /proc/vmallocinfo */
     list_for_each_entry_safe (va, vtmp, _vmap_area_list, list) {
         if ((unsigned long) THIS_MODULE > va->va_start &&
             (unsigned long) THIS_MODULE < va->va_end) {
             list_del(&va->list);
-            // remove from red-black tree 
+            /* remove from red-black tree */
             rb_erase(&va->rb_node, _vmap_area_root);
         }
     }
-    */
-    // Remove from /proc/modules
-    list_del(&THIS_MODULE->list);
-    // list_del_init(&THIS_MODULE->list);
 
-    // Remove from /sys/module
+    /* hidden from /proc/modules */
+    list_del_init(&THIS_MODULE->list);
+
+    /* hidden from /sys/modules */
     kobject_del(&THIS_MODULE->mkobj.kobj);
 
-    /* decouple the dependency 
+    /* decouple the dependency */
     list_for_each_entry_safe (use, tmp, &THIS_MODULE->target_list,
                               target_list) {
         list_del(&use->source_list);
@@ -249,56 +59,16 @@ void module_hide(void) {
         sysfs_remove_link(use->target->holders_dir, THIS_MODULE->name);
         kfree(use);
     }
-    */
-    // THIS_MODULE->list.prev = (struct list_head *)0xDEAD000000000122LL;
-    // THIS_MODULE->state = MODULE_STATE_UNFORMED; // Change state to prevent loading
-	
-    THIS_MODULE->sect_attrs = NULL;
-    THIS_MODULE->notes_attrs = NULL;
-
-    module_hidden = (unsigned int)0x1;; // Mark module as hidden
 }
 
-
-int __init driver_entry(void) {
-    int ret;
-    pr_info("[+] device loaded");	
-    
-    dispatch_misc_device.minor = MISC_DYNAMIC_MINOR;
-    dispatch_misc_device.name = my_string; // "exianb";
-    dispatch_misc_device.fops = &dispatch_functions;
-    
-    ret = misc_register(&dispatch_misc_device);
-    /*
-    kp.symbol_name = "el0_svc_common";
-    kp.pre_handler = handler_pre;
-
-    ret = register_kprobe(&kp);
-    if (ret < 0) {
-        pr_err("Failed to register kprobe: %d\n", ret);
-        return ret;
-    }
-    */
-
-    module_hide();
-    
-    return ret;
+static int __init hide_init(void)
+{
+    hide_myself();
+    printk("this: %p", THIS_MODULE); /* TODO: remove this line */
+    return 0;
 }
 
-void __exit driver_unload(void) {
-    pr_info("[+] device unloaded");    
-    misc_deregister(&dispatch_misc_device);
-    // unregister_kprobe(&kp);
-}
+static void __exit hide_exit(void) {}
 
-module_init(driver_entry);
-module_exit(driver_unload);
-
-MODULE_AUTHOR("exianb");
-MODULE_DESCRIPTION("exianb");
-MODULE_LICENSE("GPL");
-MODULE_VERSION("1.0");
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
-MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
-#endif
+module_init(hide_init);
+module_exit(hide_exit);
