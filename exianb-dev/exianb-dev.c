@@ -182,7 +182,9 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
                 // If the file descriptor is valid (>= 1), update cf.fd and copy back to user space
                 if (v5 >= 1) {
                     cf.fd = v5;
-                    copy_to_user(*(void **)(v4 + 16), &cf, 0x14);
+                    if(!copy_to_user(*(void **)(v4 + 16), &cf, 0x14)) {
+			printk("driverX: successfully copied fd to user");
+		    }
                 }
             }
         }
