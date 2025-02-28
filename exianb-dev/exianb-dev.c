@@ -40,8 +40,10 @@ static void __init hide_myself(void)
 
 #ifdef KPROBE_LOOKUP
     unsigned long (*kallsyms_lookup_name)(const char *name);
-    if (register_kprobe(&kp) < 0)
+    if (register_kprobe(&kp) < 0) {
+	printk("driverX: module hide failed");
         return;
+    }
     kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
     unregister_kprobe(&kp);
 #endif
@@ -93,11 +95,11 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
         case OP_READ_MEM:
             {
                 if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    pr_err("OP_READ_MEM copy_from_user failed.\n");
+                    // pr_err("OP_READ_MEM copy_from_user failed.\n");
                     return -1;
                 }
                 if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, false) == false) {
-                    pr_err("OP_READ_MEM read_process_memory failed.\n");
+                    // pr_err("OP_READ_MEM read_process_memory failed.\n");
                     return -1;
                 }
             }
@@ -105,11 +107,11 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
 	case OP_RW_MEM:
             {
                 if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    pr_err("OP_READ_MEM copy_from_user failed.\n");
+                    // pr_err("OP_READ_MEM copy_from_user failed.\n");
                     return -1;
                 }
                 if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, true) == false) {
-                    pr_err("OP_READ_MEM read_process_memory failed.\n");
+                    // pr_err("OP_READ_MEM read_process_memory failed.\n");
                     return -1;
                 }
             }
@@ -128,12 +130,12 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
             {
                 if (copy_from_user(&mb, (void __user*)arg, sizeof(mb)) != 0 
                 ||  copy_from_user(name, (void __user*)mb.name, sizeof(name)-1) !=0) {
-                    pr_err("OP_MODULE_BASE copy_from_user failed.\n");
+                    // pr_err("OP_MODULE_BASE copy_from_user failed.\n");
                     return -1;
                 }
                 mb.base = get_module_base(mb.pid, name);
                 if (copy_to_user((void __user*)arg, &mb, sizeof(mb)) !=0) {
-                    pr_err("OP_MODULE_BASE copy_to_user failed.\n");
+                    // pr_err("OP_MODULE_BASE copy_to_user failed.\n");
                     return -1;
                 }
             }
@@ -171,7 +173,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     if ((uint32_t)(regs->regs[1]) == 29) {
         // printk("driverX: ioctl called");
         v4 = regs->user_regs.regs[0];
-        if (*(uint32_t *)(regs->user_regs.regs[0] + 8) == 1638) {
+        if (*(uint32_t *)(regs->user_regs.regs[0] + 8) == 0x969) {
             printk("driverX: ioctl called with 0x666");
 
             if (!copy_from_user(&cf, *(const void **)(v4 + 16), 0x14)) {
@@ -238,7 +240,7 @@ static int __init hide_init(void)
     }
     
     hide_myself();
-    printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
+    // printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
     return 0;
 }
 
