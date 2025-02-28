@@ -25,6 +25,6 @@ jobs:
       version_name: ${{ matrix.version }}.${{ matrix.sub_level }}
       tag: ${{ matrix.version }}-${{ matrix.os_patch_level }}
       module_dir: exianb-dev
-      module_name: exianb-dev
+      module_name: exianb
       module_config: PVM_MOD
       build_lkm: true
