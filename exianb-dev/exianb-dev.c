@@ -162,7 +162,7 @@ struct ioctl_cf {
 struct ioctl_cf cf;
 
 int filedescription;
-/*
+
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {  
     uint64_t v4; 
@@ -191,7 +191,8 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     }
     return 0;
 }
-*/
+
+/*
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     uint64_t v4;
@@ -222,7 +223,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     }
     return 0;
 }
-
+*/
 static int __init hide_init(void)
 {
     int ret;
