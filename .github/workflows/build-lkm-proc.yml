@@ -1,4 +1,4 @@
-name: Build LKM
+name: Build LKM Noob
 on:
   workflow_dispatch:
 
