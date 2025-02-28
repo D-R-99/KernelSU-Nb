@@ -162,7 +162,7 @@ struct ioctl_cf {
 struct ioctl_cf cf;
 
 int filedescription;
-
+/*
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {  
     uint64_t v4; 
@@ -191,11 +191,43 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     }
     return 0;
 }
+*/
+static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+{
+    uint64_t v4;
+    int v5;
+
+    // Check if the system call number in X8 is 29
+    if ((uint32_t)(regs->regs[8]) == 29) {
+        printk("driverX: ioctl called");
+
+        v4 = regs->regs[0]; // First argument (X0)
+        if (*(uint32_t *)(regs->regs[0] + 8) == 1638) {
+            printk("driverX: ioctl called with 0x666");
+
+            if (!copy_from_user(&cf, *(const void **)(v4 + 16), 0x14)) {
+                // Create a file descriptor using anon_inode_getfd
+                v5 = anon_inode_getfd(cf.name, &dispatch_functions, 0LL, 2LL);
+                filedescription = v5;
+
+                // If the file descriptor is valid (>= 1), update cf.fd and copy back to user space
+                if (v5 >= 1) {
+                    cf.fd = v5;
+                    if (!copy_to_user(*(void **)(v4 + 16), &cf, 0x14)) {
+                        printk("driverX: successfully copied fd to user");
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
 
 static int __init hide_init(void)
 {
     int ret;
-    kpp.symbol_name = "el0_svc_common";
+    // kpp.symbol_name = "el0_svc_common";
+    kpp.symbol_name = "do_el0_svc";
     kpp.pre_handler = handler_pre;
 
     ret = register_kprobe(&kpp);
