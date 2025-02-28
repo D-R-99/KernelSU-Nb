@@ -68,7 +68,7 @@ struct ioctl_cf {
 static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     // Check if the syscall is ioctl (syscall number 29)
-    printk("driverX: hook called");
+    printk("driverX: hook called %d", (int) regs->regs[8]);
     if (regs->regs[8] == 29) {
         printk("driverX: ioctl called");
     }
