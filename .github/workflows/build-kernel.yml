@@ -6,7 +6,7 @@ jobs:
   build-kernel-a12:
     uses: ./.github/workflows/gki-kernel.yml
     with:
-      version: android12-5.10
-      version_name: android12-5.10.185
-      tag: android12-5.10-2023-09
-      os_patch_level: 2023-09
+      version: android13-5.15
+      version_name: android13-5.15.137
+      tag: android13-5.15-2023-12
+      os_patch_level: 2023-12
