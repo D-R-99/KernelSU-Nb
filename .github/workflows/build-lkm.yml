@@ -13,4 +13,4 @@ jobs:
       module_dir: exianb
       module_name: exianb
       module_config: PVM_MOD
-      build_lkm: true
+      build_lkm: false
