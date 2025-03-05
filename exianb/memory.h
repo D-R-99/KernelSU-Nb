@@ -126,7 +126,7 @@ bool read_process_memory(
     struct task_struct* task;
     struct mm_struct* mm;
     struct pid* pid_struct;
-    struct vm_area_struct* vma;
+    // struct vm_area_struct* vma;
     phys_addr_t pa;
 
     //pr_info("read_process_memory - pid: %d, addr: %lx, size: %zu\n", pid, addr, size);
@@ -145,6 +145,7 @@ bool read_process_memory(
         pr_err("read_process_memory mm failed.\n");
         return false;
     }
+    /*
     vma = find_vma(mm, addr);
     if(isWrite) {
         if(!vma || (vma->vm_flags & VM_WRITE) == 0 || (addr + size) > vma->vm_end){
@@ -159,6 +160,7 @@ bool read_process_memory(
             return false;
         }
     }
+    */
     mmput(mm);
     pa = translate_linear_address(mm, addr);
     if (!pa) {
