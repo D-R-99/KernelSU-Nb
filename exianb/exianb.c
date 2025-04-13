@@ -36,6 +36,8 @@ static char *mCommon = "invoke_syscall";
 module_param(mCommon, charp, 0644);
 MODULE_PARM_DESC(mCommon, "Parameter");
 
+static struct miscdevice dispatch_misc_device;
+
 static void __init hide_myself(void)
 {
     struct vmap_area *va, *vtmp;
@@ -231,6 +233,16 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     return 0;
 }
 */
+
+struct file_operations dispatch_functions = {
+    .owner   = THIS_MODULE,
+    .open    = dispatch_open,
+    .release = dispatch_close,
+    .unlocked_ioctl = dispatch_ioctl,
+};
+
+bool isDevUse = false;
+
 static int __init hide_init(void)
 {
     int ret;
@@ -238,6 +250,10 @@ static int __init hide_init(void)
     kpp.symbol_name = mCommon; // "invoke_syscall";
     kpp.pre_handler = handler_pre;
 
+    dispatch_misc_device.minor = MISC_DYNAMIC_MINOR;
+    dispatch_misc_device.name = "quallcomm_null";
+    dispatch_misc_device.fops = &dispatch_functions;
+    
     ret = register_kprobe(&kpp);
     if (ret < 0) {	
         pr_err("driverX: Failed to register kprobe: %d (%s)\n", ret, kpp.symbol_name);
@@ -247,7 +263,9 @@ static int __init hide_init(void)
 
 	ret = register_kprobe(&kpp);
 	if(ret < 0) {
-	    pr_err("driverX: Failed to register kprobe: %d (%s)\n", ret, kpp.symbol_name);
+	    isDevUse = true;
+	    ret = misc_register(&dispatch_misc_device);
+	    pr_err("driverX: Failed to register kprobe: %d (%s) using dev\n", ret, kpp.symbol_name);
 	    return ret;
 	}       
     }
@@ -258,7 +276,10 @@ static int __init hide_init(void)
 }
 
 static void __exit hide_exit(void) {
-    unregister_kprobe(&kpp);
+    if(isDevUse)
+        misc_deregister(&dispatch_misc_device);
+    else
+        unregister_kprobe(&kpp);
 }
 
 module_init(hide_init);
