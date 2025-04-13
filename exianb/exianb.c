@@ -234,13 +234,6 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 }
 */
 
-struct file_operations dispatch_functions = {
-    .owner   = THIS_MODULE,
-    .open    = dispatch_open,
-    .release = dispatch_close,
-    .unlocked_ioctl = dispatch_ioctl,
-};
-
 bool isDevUse = false;
 
 static int __init hide_init(void)
