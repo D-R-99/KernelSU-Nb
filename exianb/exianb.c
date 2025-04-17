@@ -176,11 +176,11 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 {  
     uint64_t v4; 
     int v5;
-
+    /*
     if ((uint32_t)(regs->regs[1]) == 270) {
 	printk("driverX: pvm called");
     }
-    
+    */
     if ((uint32_t)(regs->regs[1]) == 29) {
         // printk("driverX: ioctl called");
         v4 = regs->user_regs.regs[0];
