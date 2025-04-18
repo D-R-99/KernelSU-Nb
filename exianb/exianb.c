@@ -259,7 +259,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
         int code = regs->regs[2];
         int value = regs->regs[3];
         
-        printk(KERN_ERR "Input: %d %d %d", type, code, value);
+       // printk(KERN_ERR "Input: %d %d %d", type, code, value);
         /*
         
         if (type == EV_ABS && code == ABS_MT_SLOT) {
