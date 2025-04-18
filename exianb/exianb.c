@@ -25,6 +25,7 @@
 #include <linux/input.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
+#include <linux/delay.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 #define KPROBE_LOOKUP 1
@@ -353,6 +354,8 @@ static int __init hide_init(void)
                     if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
                         touch_dev = dev;
 			mutex_lock(&touch_dev->lock);
+			msleep(3*1000);
+			mutex_unlock(&touch_dev->lock);
                         break;
                     }
 		}
