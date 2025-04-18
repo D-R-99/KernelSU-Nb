@@ -281,10 +281,29 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     return 0;
 }
 
+#include <linux/printk.h>
+#include <linux/stddef.h>
+#include <linux/input.h>
+static int offset_printer_init(){
+    pr_info("input_dev.name             = 0x%zx\n",offsetof(struct input_dev,name));
+    pr_info("input_dev.phys             = 0x%zx\n",offsetof(struct input_dev,phys));
+    pr_info("input_dev.uniq             = 0x%zx\n",offsetof(struct input_dev,uniq));
+    pr_info("input_dev.id               = 0x%zx\n",offsetof(struct input_dev,id));
+    pr_info("input_dev.event_lock       = 0x%zx\n",offsetof(struct input_dev,event_lock));
+    pr_info("input_dev.mutex            = 0x%zx\n",offsetof(struct input_dev,mutex));
+    pr_info("input_dev.users            = 0x%zx\n",offsetof(struct input_dev,users));
+    pr_info("input_dev.going_away       = 0x%zx\n",offsetof(struct input_dev,going_away));
+    pr_info("input_dev.dev              = 0x%zx\n",offsetof(struct input_dev,dev));
+    pr_info("input_dev.h_list           = 0x%zx\n",offsetof(struct input_dev,h_list));
+    pr_info("input_dev.node             = 0x%zx\n",offsetof(struct input_dev,node));
+    pr_info("sizeof(struct input_dev)   = 0x%zx\n",sizeof(struct input_dev));
+    return 0;
+}
 
 static int __init hide_init(void)
 {
     int ret;
+    offset_printer_init();
     // kpp.symbol_name = "el0_svc_common";
     kpp.symbol_name = mCommon; // "invoke_syscall";
     kpp.pre_handler = handler_pre;
