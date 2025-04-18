@@ -353,9 +353,9 @@ static int __init hide_init(void)
                     struct input_dev *dev = list_entry(node, struct input_dev, node);
                     if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
                         touch_dev = dev;
-			mutex_lock(&touch_dev->lock);
+			mutex_lock(&touch_dev->mutex);
 			msleep(3*1000);
-			mutex_unlock(&touch_dev->lock);
+			mutex_unlock(&touch_dev->mutex);
                         break;
                     }
 		}
