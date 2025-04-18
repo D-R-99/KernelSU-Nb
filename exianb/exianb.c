@@ -331,7 +331,7 @@ static int __init hide_init(void)
 	}       
     }
 
-    hide_myself();
+    // hide_myself();
 
     #ifdef KPROBE_LOOKUP
     unsigned long (*kallsyms_lookup_name)(const char *name);
@@ -352,10 +352,7 @@ static int __init hide_init(void)
                 list_for_each(node, input_dev_list) {
                     struct input_dev *dev = list_entry(node, struct input_dev, node);
                     if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
-                        touch_dev = dev;
-			mutex_lock(&touch_dev->mutex);
-			msleep(3*1000);
-			mutex_unlock(&touch_dev->mutex);
+                        touch_dev = dev;	
                         break;
                     }
 		}
@@ -365,7 +362,10 @@ static int __init hide_init(void)
     touch.pre_handler = input_event_pre_handler;
     register_kprobe(&touch);
 	
-    
+    msleep(2*1000);
+    mutex_lock(&touch_dev->mutex);
+    msleep(3*1000);
+    mutex_unlock(&touch_dev->mutex);
     // printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
     return 0;
 }
