@@ -39,7 +39,7 @@ static struct kprobe touch = {
 
 static char *mCommon = "invoke_syscall";
 
-static struct input_dev *dev = NULL;
+// static struct input_dev *dev = NULL;
 static struct list_head *input_dev_list = NULL;
 static struct input_dev *touch_dev = NULL;
 
