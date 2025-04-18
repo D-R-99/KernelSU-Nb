@@ -255,10 +255,11 @@ bool isDevUse = false;
 static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     struct input_dev *dev = (struct input_dev *)regs->regs[0];
     if (dev == touch_dev) {
+	    /*
         int type = regs->regs[1];
         int code = regs->regs[2];
         int value = regs->regs[3];
-        
+        */
        // printk(KERN_ERR "Input: %d %d %d", type, code, value);
         /*
         
