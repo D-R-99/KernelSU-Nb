@@ -311,7 +311,7 @@ static int __init hide_init(void)
     unsigned long (*kallsyms_lookup_name)(const char *name);
     if (register_kprobe(&kp) < 0) {
 	printk("driverX: module kallsym failed");
-        return;
+        return -1;
     }
     kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
     input_dev_list = (struct list_head *)kallsyms_lookup_name("input_dev_list");
