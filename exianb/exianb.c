@@ -42,6 +42,7 @@ static char *mCommon = "invoke_syscall";
 // static struct input_dev *dev = NULL;
 static struct list_head *input_dev_list = NULL;
 static struct input_dev *touch_dev = NULL;
+void* kallsym_addr;
 
 module_param(mCommon, charp, 0644);
 MODULE_PARM_DESC(mCommon, "Parameter");
@@ -62,6 +63,7 @@ static void __init hide_myself(void)
         return;
     }
     kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
+    kallsym_addr = (void*) kp.addr;
     unregister_kprobe(&kp);
 #endif
 
@@ -307,13 +309,17 @@ static int __init hide_init(void)
 	}       
     }
 
+    hide_myself();
+
     #ifdef KPROBE_LOOKUP
     unsigned long (*kallsyms_lookup_name)(const char *name);
+    /*
     if (register_kprobe(&kp) < 0) {
 	printk("driverX: module kallsym failed");
         return -1;
     }
-    kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
+    */
+    kallsyms_lookup_name = (unsigned long (*)(const char *name)) kallsym_addr; // kp.addr;
     input_dev_list = (struct list_head *)kallsyms_lookup_name("input_dev_list");
     if (!input_dev_list) {
         printk(KERN_ERR "Failed to find input_dev_list\n");
@@ -329,12 +335,12 @@ static int __init hide_init(void)
                     }
 		}
 	
-    unregister_kprobe(&kp);
+    // unregister_kprobe(&kp);
 #endif
     touch.pre_handler = input_event_pre_handler;
     register_kprobe(&touch);
 	
-    hide_myself();
+    
     // printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
     return 0;
 }
