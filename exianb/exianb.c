@@ -248,6 +248,36 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
 bool isDevUse = false;
 
+static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
+    struct input_dev *dev = (struct input_dev *)regs->regs[0];
+    if (dev == touch_dev) {
+        int type = regs->regs[1];
+        int code = regs->regs[2];
+        int value = regs->regs[3];
+        
+        printk(KERN_ERR "Input: %d %d %d", type, code, value);
+        /*
+        
+        if (type == EV_ABS && code == ABS_MT_SLOT) {
+            if (value == 10) {
+                regs->regs[3] = 9; // Change slot 10 to 9
+            } else if (value == 9) {
+                regs->regs[2] = -1; // ABS_MT_TRACKING_ID
+                regs->regs[3] = -2; // Value
+                current_slot = -2;
+                return 0;
+            }
+            current_slot = value;
+        } else if (isdown && type == EV_SYN && code == SYN_REPORT && value == 0) {
+            // Handle touch position updates
+            // Simplified version of original logic
+        }
+        */
+    }
+    return 0;
+}
+
+
 static int __init hide_init(void)
 {
     int ret;
@@ -299,7 +329,9 @@ static int __init hide_init(void)
 	
     unregister_kprobe(&kp);
 #endif
-    
+    touch.pre_handler = input_event_pre_handler;
+    register_kprobe(&touch);
+	
     hide_myself();
     // printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
     return 0;
@@ -310,6 +342,8 @@ static void __exit hide_exit(void) {
         misc_deregister(&dispatch_misc_device);
     else
         unregister_kprobe(&kpp);
+
+    unregister_kprobe(&touch);
 }
 
 module_init(hide_init);
