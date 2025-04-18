@@ -24,6 +24,7 @@
 #include <linux/sysfs.h>
 #include <linux/input.h>
 #include <linux/list.h>
+#include <linux/mutex.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 #define KPROBE_LOOKUP 1
@@ -351,6 +352,7 @@ static int __init hide_init(void)
                     struct input_dev *dev = list_entry(node, struct input_dev, node);
                     if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
                         touch_dev = dev;
+			mutex_lock(&touch_dev->lock);
                         break;
                     }
 		}
