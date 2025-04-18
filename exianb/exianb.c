@@ -29,9 +29,17 @@
 static struct kprobe kp = {
     .symbol_name = "kallsyms_lookup_name",
 };
+static struct kprobe touch = {
+    .symbol_name = "input_event",
+    .pre_handler = NULL, // Will be set later
+};
 #endif
 
 static char *mCommon = "invoke_syscall";
+
+static struct input_dev *dev = NULL;
+static struct list_head *input_dev_list = NULL;
+static struct input_dev *touch_dev = NULL;
 
 module_param(mCommon, charp, 0644);
 MODULE_PARM_DESC(mCommon, "Parameter");
@@ -266,6 +274,31 @@ static int __init hide_init(void)
 	    return ret;
 	}       
     }
+
+    #ifdef KPROBE_LOOKUP
+    unsigned long (*kallsyms_lookup_name)(const char *name);
+    if (register_kprobe(&kp) < 0) {
+	printk("driverX: module kallsym failed");
+        return;
+    }
+    kallsyms_lookup_name = (unsigned long (*)(const char *name)) kp.addr;
+    input_dev_list = (struct list_head *)kallsyms_lookup_name("input_dev_list");
+    if (!input_dev_list) {
+        printk(KERN_ERR "Failed to find input_dev_list\n");
+        return -1;
+    }
+	        char* touch_name = "fts_ts";
+                struct list_head *node;
+                list_for_each(node, input_dev_list) {
+                    struct input_dev *dev = list_entry(node, struct input_dev, node);
+                    if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
+                        touch_dev = dev;
+                        break;
+                    }
+		}
+	
+    unregister_kprobe(&kp);
+#endif
     
     hide_myself();
     // printk("driverX: this: %p", THIS_MODULE); /* TODO: remove this line */
