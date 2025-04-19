@@ -294,6 +294,7 @@ static int offset_printer_init(){
     pr_info("input_dev.id               = 0x%zx\n",offsetof(struct input_dev,id));
     pr_info("input_dev.event_lock       = 0x%zx\n",offsetof(struct input_dev,event_lock));
     pr_info("input_dev.mutex            = 0x%zx\n",offsetof(struct input_dev,mutex));
+    pr_info("input_dev.mt            = 0x%zx\n",offsetof(struct input_dev,mt));
     pr_info("input_dev.users            = 0x%zx\n",offsetof(struct input_dev,users));
     pr_info("input_dev.going_away       = 0x%zx\n",offsetof(struct input_dev,going_away));
     pr_info("input_dev.dev              = 0x%zx\n",offsetof(struct input_dev,dev));
