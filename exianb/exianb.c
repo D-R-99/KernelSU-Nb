@@ -46,6 +46,7 @@ static struct list_head *input_dev_list = NULL;
 static struct input_dev *touch_dev = NULL;
 bool isdown = true;
 int current_touchx, current_touchy;
+int current_slot = -1;
 
 void* kallsym_addr;
 
@@ -253,6 +254,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
             input_event(touch_dev, 3LL, 58LL, 30LL);
             input_event(touch_dev, 3LL, 48LL, 30LL);
         }
+    }
     }
     return 0;
 }
