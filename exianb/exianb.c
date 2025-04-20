@@ -279,7 +279,7 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
         
         int v20;
         int* v21;
-        mutex *p_mutex;
+        struct mutex *p_mutex;
         long int v26, v27;
         
         if ( isdown ) {
