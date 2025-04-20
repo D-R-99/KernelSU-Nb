@@ -23,6 +23,7 @@
 #include <linux/slab.h>
 #include <linux/sysfs.h>
 #include <linux/input.h>
+#include <linux/input/mt.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/delay.h>
