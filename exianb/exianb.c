@@ -117,6 +117,7 @@ int dispatch_close(struct inode *node, struct file *file) {
 long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned long const arg) {
     static COPY_MEMORY cm;
     static MODULE_BASE mb;
+    static COPY_TOUCH ct;
     static char name[0x100] = {0};
 
     switch (cmd) {
@@ -168,6 +169,19 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
                 }
             }
             break;
+	case 0x9999:
+            {
+                if (copy_from_user(&ct, (void __user*)arg, sizeof(ct)) != 0) {
+                    pr_err("COPY_TOUCH copy_from_user failed.\n");
+                    return -1;
+                }
+                
+                pr_info("Touch called");
+                
+               if(!Touch(true, ct.x, ct.y))
+                  return -1;
+            }
+            break;                      
         default:
             break;
     }
