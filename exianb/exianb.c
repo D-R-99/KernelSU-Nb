@@ -260,7 +260,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     }
     return 0;
 }
-
+/*
 bool Touch(bool isdown, unsigned int x, unsigned int y)
 {
     if ( touch_dev ) {
@@ -362,7 +362,76 @@ LABEL_46:
         }
     }
 }
+*/
 
+bool Touch(bool isdown, unsigned int x, unsigned int y)
+{
+    struct input_mt *mt;
+    int v10;
+    int v11;
+    int v12;
+    int v13;
+    int v14;
+    int v15;
+    int v16;
+    int v17;
+    int v18;
+    int v19;
+    int v20;
+    int *v21;
+    struct mutex *p_mutex;
+    long v26;
+    long v27;
+
+    if (!touch_dev)
+        return false;
+    mutex_lock(&touch_mutex);
+    mt = touch_dev->mt;
+    v10 = mt->slots[0].abs[9];
+    v11 = mt->slots[1].abs[9];
+    v12 = mt->slots[2].abs[9];
+    v13 = mt->slots[3].abs[9];
+    v14 = mt->slots[4].abs[9];
+    v15 = mt->slots[5].abs[9];
+    v16 = mt->slots[6].abs[9];
+    v17 = mt->slots[7].abs[9];
+    v18 = mt->slots[8].abs[9];
+    v19 = mt->slots[9].abs[9];
+    if (isdown) {
+        if (v10 < 0) { v20 = 0; v21 = &active_touch_ids[0]; goto LABEL_42; }
+        if (v11 < 0) { v20 = 1; v21 = &active_touch_ids[1]; goto LABEL_42; }
+        if (v12 < 0) { v20 = 2; v21 = &active_touch_ids[2]; goto LABEL_42; }
+        if (v13 < 0) { v20 = 3; v21 = &active_touch_ids[3]; goto LABEL_42; }
+        if (v14 < 0) { v20 = 4; v21 = &active_touch_ids[4]; goto LABEL_42; }
+        if (v15 < 0) { v20 = 5; v21 = &active_touch_ids[5]; goto LABEL_42; }
+        if (v16 < 0) { v20 = 6; v21 = &active_touch_ids[6]; goto LABEL_42; }
+        if (v17 < 0) { v20 = 7; v21 = &active_touch_ids[7]; goto LABEL_42; }
+        if (v18 < 0) { v20 = 8; v21 = &active_touch_ids[8]; goto LABEL_42; }
+        if (v19 < 0) { v20 = 9; v21 = &active_touch_ids[9]; goto LABEL_42; }
+        mutex_unlock(&touch_mutex);
+        return false;
+LABEL_42:
+        p_mutex = &touch_dev->mutex;
+        mutex_lock(p_mutex);
+        *v21 = v20;
+        current_touchx = x;
+        current_touchy = y;
+        input_event(touch_dev, 3LL, 47LL, 10LL);
+        input_mt_report_slot_state(touch_dev, 0LL, 1LL);
+        input_event(touch_dev, 1LL, 330LL, 1LL);
+        input_event(touch_dev, 3LL, 53LL, x);
+        input_event(touch_dev, 3LL, 54LL, y);
+        input_event(touch_dev, 3LL, 58LL, 30LL);
+        v26 = 48LL;
+        v27 = 30LL;
+        input_event(touch_dev, 3LL, v26, v27);
+        mutex_unlock(p_mutex);
+        mutex_unlock(&touch_mutex);
+        return true;
+    }
+    mutex_unlock(&touch_mutex);
+    return false;
+}
 
 #include <linux/printk.h>
 #include <linux/stddef.h>
