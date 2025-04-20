@@ -48,7 +48,7 @@ bool isdown = true;
 int current_touchx, current_touchy;
 int current_slot = -1;
 int active_touch_ids[10];
-mutex touch_mutex;
+struct mutex touch_mutex;
 
 void* kallsym_addr;
 
@@ -266,16 +266,16 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
     if ( touch_dev ) {
         mutex_lock(&touch_mutex);
         struct input_mt* mt = touch_dev->mt;
-        int v10 = mt->slots[0].abs[9];
-        int v11 = mt->slots[1].abs[9];
-        int v12 = mt->slots[2].abs[9];
-        int v13 = mt->slots[3].abs[9];
-        int v14 = mt->slots[4].abs[9];
-        int v15 = mt->slots[5].abs[9];
-        int v16 = mt->slots[6].abs[9];
-        int v17 = mt->slots[7].abs[9];
-        int v18 = mt->slots[8].abs[9];
-        int v19 = mt->slots[9].abs[9];
+        int v10; // = mt->slots[0].abs[9];
+        int v11; //  = mt->slots[1].abs[9];
+        int v12; // = mt->slots[2].abs[9];
+        int v13; // = mt->slots[3].abs[9];
+        int v14; // = mt->slots[4].abs[9];
+        int v15; // = mt->slots[5].abs[9];
+        int v16; // = mt->slots[6].abs[9];
+        int v17; // = mt->slots[7].abs[9];
+        int v18; // = mt->slots[8].abs[9];
+        int v19; // = mt->slots[9].abs[9];
         
         int v20;
         int* v21;
