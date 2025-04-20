@@ -219,70 +219,41 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
     return 0;
 }
 
-/*
-static int handler_pre(struct kprobe *p, struct pt_regs *regs)
-{
-    uint64_t v4;
-    int v5;
-
-    // Check if the system call number in X8 is 29
-    if ((uint32_t)(regs->regs[8]) == 29) {
-        printk("driverX: ioctl called");
-
-        v4 = regs->regs[0]; // First argument (X0)
-        if (*(uint32_t *)(regs->regs[0] + 8) == 1638) {
-            printk("driverX: ioctl called with 0x666");
-
-            if (!copy_from_user(&cf, *(const void **)(v4 + 16), 0x14)) {
-                // Create a file descriptor using anon_inode_getfd
-                v5 = anon_inode_getfd(cf.name, &dispatch_functions, 0LL, 2LL);
-                filedescription = v5;
-
-                // If the file descriptor is valid (>= 1), update cf.fd and copy back to user space
-                if (v5 >= 1) {
-                    cf.fd = v5;
-                    if (!copy_to_user(*(void **)(v4 + 16), &cf, 0x14)) {
-                        printk("driverX: successfully copied fd to user");
-                    }
-                }
-            }
-        }
-    }
-    return 0;
-}
-*/
-
 bool isDevUse = false;
 
 static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     struct input_dev *dev = (struct input_dev *)regs->regs[0];
-    if (dev == touch_dev) {
-	    /*
+    if (dev == touch_dev) {	    
         int type = regs->regs[1];
         int code = regs->regs[2];
         int value = regs->regs[3];
-        */
+                
        // printk(KERN_ERR "Input: %d %d %d", type, code, value);
-        /*
-        
-        if (type == EV_ABS && code == ABS_MT_SLOT) {
-            if (value == 10) {
-                regs->regs[3] = 9; // Change slot 10 to 9
-            } else if (value == 9) {
-                regs->regs[2] = -1; // ABS_MT_TRACKING_ID
-                regs->regs[3] = -2; // Value
-                current_slot = -2;
-                return 0;
-            }
-            current_slot = value;
-        } else if (isdown && type == EV_SYN && code == SYN_REPORT && value == 0) {
-            // Handle touch position updates
-            // Simplified version of original logic
+                
+            if (type == /*3*/ EV_ABS && code == /*47*/ ABS_MT_SLOT) {
+        if (value == 10) {
+            args->arg3 /*value*/ = 9; // Change slot 10 to 9
+        } else if (value == 9) {
+            args->arg2 /*code*/ = -1; // ABS_MT_TRACKING_ID
+            args->arg3 /*value*/ = -2; // Value
+            current_slot = -2;
+            return;
         }
-        */
+        current_slot = value;
+    } else if (isdown && type == EV_SYN && code == SYN_REPORT && value == 0) {
+        // Handle touch position updates
+        if(/*some check 336*/ false) {
+            input_event(touch_dev, 3LL, 47LL, 10LL);
+            input_mt_report_slot_state(touch_dev, 0LL, 1LL);
+            input_event(touch_dev, 3LL, 53LL, (unsigned int)current_touchx);
+            input_event(touch_dev, 3LL, 54LL, (unsigned int)current_touchy);
+            input_event(touch_dev, 3LL, 58LL, 30LL);
+            input_event(touch_dev, 3LL, 48LL, 30LL);
+        }
     }
     return 0;
 }
+
 
 #include <linux/printk.h>
 #include <linux/stddef.h>
