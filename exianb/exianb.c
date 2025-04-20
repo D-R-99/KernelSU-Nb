@@ -463,7 +463,7 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
         v[i] = mt->slots[i].abs[9];
 
     int slot = -1;
-    int *id_ptr = NULL;
+    // int *id_ptr = NULL;
 
     if (isdown)
     {
@@ -483,7 +483,7 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
             return false;
         }
 
-        *id_ptr = slot;
+        // *id_ptr = slot;
         struct mutex *p_mutex = &touch_dev->mutex;
         mutex_lock(p_mutex);
 
@@ -521,7 +521,7 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
             return false;
         }
 
-        *id_ptr = slot;
+        // *id_ptr = slot;
         struct mutex *p_mutex = &touch_dev->mutex;
         mutex_lock(p_mutex);
 
