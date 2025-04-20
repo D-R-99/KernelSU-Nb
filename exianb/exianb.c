@@ -53,6 +53,8 @@ struct mutex touch_mutex;
 
 void* kallsym_addr;
 
+bool Touch(bool isdown, unsigned int x, unsigned int y);
+
 module_param(mCommon, charp, 0644);
 MODULE_PARM_DESC(mCommon, "Parameter");
 
