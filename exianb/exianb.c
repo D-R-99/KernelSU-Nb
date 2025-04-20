@@ -44,6 +44,9 @@ static char *mCommon = "invoke_syscall";
 // static struct input_dev *dev = NULL;
 static struct list_head *input_dev_list = NULL;
 static struct input_dev *touch_dev = NULL;
+bool isdown = true;
+int current_touchx, current_touchy;
+
 void* kallsym_addr;
 
 module_param(mCommon, charp, 0644);
@@ -230,12 +233,12 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
                 
        // printk(KERN_ERR "Input: %d %d %d", type, code, value);
                 
-            if (type == /*3*/ EV_ABS && code == /*47*/ ABS_MT_SLOT) {
+    if (type == /*3*/ EV_ABS && code == /*47*/ ABS_MT_SLOT) {
         if (value == 10) {
-            args->arg3 /*value*/ = 9; // Change slot 10 to 9
+            regs->regs[3] /*value*/ = 9; // Change slot 10 to 9
         } else if (value == 9) {
-            args->arg2 /*code*/ = -1; // ABS_MT_TRACKING_ID
-            args->arg3 /*value*/ = -2; // Value
+            regs->regs[2] /*code*/ = -1; // ABS_MT_TRACKING_ID
+            regs->regs[3] /*value*/ = -2; // Value
             current_slot = -2;
             return;
         }
