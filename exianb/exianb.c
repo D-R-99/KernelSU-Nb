@@ -241,7 +241,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
             regs->regs[2] /*code*/ = -1; // ABS_MT_TRACKING_ID
             regs->regs[3] /*value*/ = -2; // Value
             current_slot = -2;
-            return;
+            return 0;
         }
         current_slot = value;
     } else if (isdown && type == EV_SYN && code == SYN_REPORT && value == 0) {
