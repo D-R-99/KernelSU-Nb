@@ -265,13 +265,29 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
         current_slot = value;
     } else if (isdown && type == EV_SYN && code == SYN_REPORT && value == 0) {
         // Handle touch position updates
-        if(/*some check 336*/ false) {
+	/*
+        if(/*some check 336* false) {
             input_event(touch_dev, 3LL, 47LL, 10LL);
             input_mt_report_slot_state(touch_dev, 0LL, 1LL);
             input_event(touch_dev, 3LL, 53LL, (unsigned int)current_touchx);
             input_event(touch_dev, 3LL, 54LL, (unsigned int)current_touchy);
             input_event(touch_dev, 3LL, 58LL, 30LL);
             input_event(touch_dev, 3LL, 48LL, 30LL);
+        }
+	*/
+        auto v8 = *reinterpret_cast<uint64_t*>(reinterpret_cast<uint64_t>(dev) + 336);
+
+        int* coords = reinterpret_cast<int*>(v8);
+        int stored_x = coords[628 / 4]; // 628 offset
+        int stored_y = coords[632 / 4]; // 632 offset
+
+        if (stored_x != current_touchx || stored_y != current_touchy) {
+        input_event(touch_dev, 3LL, 47LL, 10LL);
+        input_mt_report_slot_state(touch_dev, 0LL, 1LL);
+        input_event(touch_dev, 3LL, 53LL, current_touchx);
+        input_event(touch_dev, 3LL, 54LL, current_touchy);
+        input_event(touch_dev, 3LL, 58LL, 30LL);
+        input_event(touch_dev, 3LL, 48LL, 30LL);
         }
     }
     }
