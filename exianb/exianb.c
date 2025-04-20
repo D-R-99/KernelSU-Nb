@@ -379,7 +379,6 @@ LABEL_46:
         }
     }
 }
-*/
 
 bool Touch(bool isdown, unsigned int x, unsigned int y)
 {
@@ -448,6 +447,97 @@ LABEL_42:
     }
     mutex_unlock(&touch_mutex);
     return false;
+}
+*/
+
+bool Touch(bool isdown, unsigned int x, unsigned int y)
+{
+    if (!touch_dev)
+        return false;
+
+    mutex_lock(&touch_mutex);
+
+    struct input_mt *mt = touch_dev->mt;
+    int v[10];
+    for (int i = 0; i < 10; ++i)
+        v[i] = mt->slots[i].abs[9];
+
+    int slot = -1;
+    int *id_ptr = nullptr;
+
+    if (isdown)
+    {
+        for (int i = 0; i < 10; ++i)
+        {
+            if (v[i] < 0)
+            {
+                slot = i;
+                id_ptr = &active_touch_ids[i];
+                break;
+            }
+        }
+
+        if (slot == -1)
+        {
+            mutex_unlock(&touch_mutex);
+            return false;
+        }
+
+        *id_ptr = slot;
+        struct mutex *p_mutex = &touch_dev->mutex;
+        mutex_lock(p_mutex);
+
+        current_touchx = x;
+        current_touchy = y;
+
+        input_event(touch_dev, 3LL, 47LL, 10LL); // ABS_MT_TOUCH_MAJOR
+        isdown = 1;
+        input_mt_report_slot_state(touch_dev, 0LL, 1LL); // BTN_TOUCH down
+        input_event(touch_dev, 1LL, 330LL, 1LL); // BTN_TOUCH
+        input_event(touch_dev, 3LL, 53LL, x);    // ABS_MT_POSITION_X
+        input_event(touch_dev, 3LL, 54LL, y);    // ABS_MT_POSITION_Y
+        input_event(touch_dev, 3LL, 58LL, 30LL); // ABS_MT_PRESSURE
+        input_event(touch_dev, 3LL, 48LL, 30LL); // ABS_MT_WIDTH_MAJOR
+
+        mutex_unlock(p_mutex);
+        mutex_unlock(&touch_mutex);
+        return true;
+    }
+    else
+    {
+        for (int i = 0; i < 10; ++i)
+        {
+            if (v[i] < 0 || (i == 9 && (v[i] & 0x80000000)))
+            {
+                slot = i;
+                id_ptr = &active_touch_ids[i];
+                break;
+            }
+        }
+
+        if (slot == -1)
+        {
+            mutex_unlock(&touch_mutex);
+            return false;
+        }
+
+        *id_ptr = slot;
+        struct mutex *p_mutex = &touch_dev->mutex;
+        mutex_lock(p_mutex);
+
+        current_touchx = x;
+        current_touchy = y;
+
+        input_event(touch_dev, 3LL, 47LL, 10LL); // ABS_MT_TOUCH_MAJOR
+        isdown = 0;
+        input_event(touch_dev, 1LL, 330LL, 0LL); // BTN_TOUCH up
+        input_mt_report_slot_state(touch_dev, 0LL, 0LL); // BTN_TOUCH up
+        input_event(touch_dev, 3LL, 57LL, 0xFFFFFFFFLL); // ABS_MT_TRACKING_ID -1
+
+        mutex_unlock(p_mutex);
+        mutex_unlock(&touch_mutex);
+        return true;
+    }
 }
 
 #include <linux/printk.h>
