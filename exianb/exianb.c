@@ -348,15 +348,16 @@ static int __init hide_init(void)
         printk(KERN_ERR "Failed to find input_dev_list\n");
         return -1;
     }
-	        char* touch_name = "fts_ts";
-                struct list_head *node;
-                list_for_each(node, input_dev_list) {
-                    struct input_dev *dev = list_entry(node, struct input_dev, node);
-                    if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
-                        touch_dev = dev;	
-                        break;
-                    }
-		}
+	
+    char* touch_name = "fts_ts";
+    struct list_head *node;
+    list_for_each(node, input_dev_list) {
+    struct input_dev *dev = list_entry(node, struct input_dev, node);
+        if (!strncmp(dev->name, touch_name, strlen(touch_name))) {
+            touch_dev = dev;	
+            break;
+        }
+    }
 	
     // unregister_kprobe(&kp);
 #endif
