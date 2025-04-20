@@ -463,7 +463,7 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
         v[i] = mt->slots[i].abs[9];
 
     int slot = -1;
-    int *id_ptr = null;
+    int *id_ptr = NULL;
 
     if (isdown)
     {
