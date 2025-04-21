@@ -498,14 +498,14 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
         current_touchx = x;
         current_touchy = y;
 
-        input_event(touch_dev, 3LL, 47LL, 10LL); // ABS_MT_TOUCH_MAJOR
+        // input_event(touch_dev, 3LL, 47LL, 10LL); // ABS_MT_TOUCH_MAJOR
         isdown = 1;
-        input_mt_report_slot_state(touch_dev, 0LL, 1LL); // BTN_TOUCH down
+        // input_mt_report_slot_state(touch_dev, 0LL, 1LL); // BTN_TOUCH down
         // input_event(touch_dev, 1LL, 330LL, 1LL); // BTN_TOUCH
         input_event(touch_dev, 3LL, 53LL, x);    // ABS_MT_POSITION_X
         input_event(touch_dev, 3LL, 54LL, y);    // ABS_MT_POSITION_Y
-        input_event(touch_dev, 3LL, 58LL, 30LL); // ABS_MT_PRESSURE
-        input_event(touch_dev, 3LL, 48LL, 30LL); // ABS_MT_WIDTH_MAJOR
+        // input_event(touch_dev, 3LL, 58LL, 30LL); // ABS_MT_PRESSURE
+        // input_event(touch_dev, 3LL, 48LL, 30LL); // ABS_MT_WIDTH_MAJOR
 
         mutex_unlock(p_mutex);
         mutex_unlock(&touch_mutex);
