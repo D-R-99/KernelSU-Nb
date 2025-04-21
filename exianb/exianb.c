@@ -123,40 +123,7 @@ long dispatch_ioctl(struct file* const file, unsigned int const cmd, unsigned lo
     static char name[0x100] = {0};
 
     switch (cmd) {
-        case OP_READ_MEM:
-            {
-                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    // pr_err("OP_READ_MEM copy_from_user failed.\n");
-                    return -1;
-                }
-                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, false) == false) {
-                    // pr_err("OP_READ_MEM read_process_memory failed.\n");
-                    return -1;
-                }
-            }
-            break;
-	case OP_RW_MEM:
-            {
-                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    // pr_err("OP_READ_MEM copy_from_user failed.\n");
-                    return -1;
-                }
-                if (read_process_memory(cm.pid, cm.addr, cm.buffer, cm.size, true) == false) {
-                    // pr_err("OP_READ_MEM read_process_memory failed.\n");
-                    return -1;
-                }
-            }
-            break;
-        case OP_WRITE_MEM:
-            {
-                if (copy_from_user(&cm, (void __user*)arg, sizeof(cm)) != 0) {
-                    return -1;
-                }
-                if (write_process_memory(cm.pid, cm.addr, cm.buffer, cm.size) == false) {
-                    return -1;
-                }
-            }
-            break;
+        
         case OP_MODULE_BASE:
             {
                 if (copy_from_user(&mb, (void __user*)arg, sizeof(mb)) != 0 
