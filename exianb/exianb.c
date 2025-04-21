@@ -504,6 +504,7 @@ bool Touch(bool isdown, unsigned int x, unsigned int y)
         // input_event(touch_dev, 1LL, 330LL, 1LL); // BTN_TOUCH
         input_event(touch_dev, 3LL, 53LL, x);    // ABS_MT_POSITION_X
         input_event(touch_dev, 3LL, 54LL, y);    // ABS_MT_POSITION_Y
+	input_event(touch_dev, 0LL, 0LL, 0);
         // input_event(touch_dev, 3LL, 58LL, 30LL); // ABS_MT_PRESSURE
         // input_event(touch_dev, 3LL, 48LL, 30LL); // ABS_MT_WIDTH_MAJOR
 
