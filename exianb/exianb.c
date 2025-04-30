@@ -252,6 +252,52 @@ bool stopEvent(struct pt_regs *regs) {
     return true;
 }
 
+#define MAX_EVENTS 64
+
+struct input_event_cache {
+    int type;
+    int code;
+    int value;
+};
+
+static struct input_event_cache event_cache[MAX_EVENTS];
+static int event_count = 0;
+
+static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
+    struct input_dev *dev = (struct input_dev *)regs->regs[0];
+
+    if (dev == touch_dev) {
+        int type = regs->regs[1];
+        int code = regs->regs[2];
+        int value = regs->regs[3];
+
+        // Cache the event
+        if (event_count < MAX_EVENTS) {
+            event_cache[event_count++] = (struct input_event_cache){type, code, value};
+        }
+
+        // On SYN_REPORT, replay all and then trigger stop logic
+        if (type == 0 && code == 0 && value == 0) {
+            for (int i = 0; i < event_count; ++i) {
+                input_event(dev,
+                            event_cache[i].type,
+                            event_cache[i].code,
+                            event_cache[i].value);
+            }
+
+            event_count = 0;          
+        } else {
+	    // Call stop logic (side-effect only)
+            stopEvent(regs);
+	}
+
+        return 1; // Always skip the original input_event
+    }
+
+    return 0;
+}
+
+#if 0
 static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     struct input_dev *dev = (struct input_dev *)regs->regs[0];
     if (dev == touch_dev) {	    
@@ -280,7 +326,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     }
     return 0;
 }
-
+#endif
 bool Touch(bool isdown, unsigned int x, unsigned int y)
 {
     if (!touch_dev)
