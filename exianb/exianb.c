@@ -246,6 +246,40 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
 bool isDevUse = false;
 
+bool stopEvent(struct pt_regs *regs){
+    regs->regs[0]=0;
+    regs->pc=regs->regs[30];
+    return true;
+}
+#define MAX_EVENTS 64
+struct input_event_cache{int type;int code;int value;};
+static struct input_event_cache event_cache[MAX_EVENTS];
+static int event_count;
+static bool replaying;
+static int input_event_pre_handler(struct kprobe *kp,struct pt_regs *regs){
+    if(replaying) return 0;
+    struct input_dev *dev=(struct input_dev*)regs->regs[0];
+    if(dev!=touch_dev) return 0;
+    int type=regs->regs[1];int code=regs->regs[2];int value=regs->regs[3];
+    if(type==0&&code==0&&value==0){
+        replaying=true;
+        for(int i=0;i<event_count;i++){
+            input_event(dev,event_cache[i].type,
+                        event_cache[i].code,
+                        event_cache[i].value);
+        }
+        input_event(dev,0,0,0);
+        event_count=0;
+        replaying=false;
+    } else {
+        if(event_count<MAX_EVENTS)
+            event_cache[event_count++] = (struct input_event_cache){type,code,value};
+    }
+    stopEvent(regs);
+    return 1;
+}
+
+#if 0
 bool stopEvent(struct pt_regs *regs) {
     regs->regs[0] = 0;
     regs->pc = regs->regs[30];  // x30 (a.k.a. LR) holds the return address
@@ -287,7 +321,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs){
     return 0;
 }
 
-#if 0
+// #if 0
 bool stopEvent(struct pt_regs *regs) {
     regs->regs[0] = 0;
     regs->pc = regs->regs[30];  // x30 (a.k.a. LR) holds the return address
