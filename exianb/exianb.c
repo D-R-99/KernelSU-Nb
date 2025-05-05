@@ -246,6 +246,35 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
 bool isDevUse = false;
 
+#define MAX_EVENTS 256
+struct input_event_cache{int type;int code;int value;}event_cache[MAX_EVENTS];
+static int event_count;
+static bool in_replay;
+bool stopEvent(struct pt_regs *regs){regs->regs[0]=0;regs->pc=regs->regs[30];return true;}
+static int input_event_pre_handler(struct kprobe *kp,struct pt_regs *regs){
+    struct input_dev *dev=(struct input_dev*)regs->regs[0];
+    int type=regs->regs[1],code=regs->regs[2],value=regs->regs[3];
+    if(dev!=touch_dev)return 0;
+    if(in_replay)return 0;
+    stopEvent(regs);
+    if(type==EV_SYN&&code==SYN_REPORT){
+        in_replay=true;
+        for(int i=0;i<event_count;i++) {
+	    input_event(dev,event_cache[i].type,event_cache[i].code,event_cache[i].value);
+	    printk(KERN_INFO "reply: %d %d %d", 
+		        event_cache[i].type,
+                        event_cache[i].code,
+                        event_cache[i].value);
+	}
+        in_replay=false;
+        event_count=0;
+    } else {
+        if(event_count<MAX_EVENTS)event_cache[event_count++]=(struct input_event_cache){type,code,value};
+    }
+    return 1;
+}
+
+#if 0
 bool stopEvent(struct pt_regs *regs){
     regs->regs[0]=0;
     regs->pc=regs->regs[30];
@@ -284,7 +313,6 @@ static int input_event_pre_handler(struct kprobe *kp,struct pt_regs *regs){
     return 1;
 }
 
-#if 0
 bool stopEvent(struct pt_regs *regs) {
     regs->regs[0] = 0;
     regs->pc = regs->regs[30];  // x30 (a.k.a. LR) holds the return address
