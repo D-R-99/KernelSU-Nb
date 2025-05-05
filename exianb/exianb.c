@@ -267,6 +267,10 @@ static int input_event_pre_handler(struct kprobe *kp,struct pt_regs *regs){
             input_event(dev,event_cache[i].type,
                         event_cache[i].code,
                         event_cache[i].value);
+
+	    pr_err("reply: %d %d %d", dev,event_cache[i].type,
+                        event_cache[i].code,
+                        event_cache[i].value);
         }
         input_event(dev,0,0,0);
         event_count=0;
