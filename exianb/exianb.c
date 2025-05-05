@@ -246,6 +246,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
 
 bool isDevUse = false;
 
+#if 0
 bool stopEvent(struct pt_regs *regs) {
     regs->regs[0] = 0;
     regs->pc = regs->regs[30];  // x30 (a.k.a. LR) holds the return address
@@ -297,7 +298,7 @@ static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     return 0;
 }
 
-#if 0
+// #if 0
 static int input_event_pre_handler(struct kprobe *kp, struct pt_regs *regs) {
     struct input_dev *dev = (struct input_dev *)regs->regs[0];
     if (dev == touch_dev) {	    
