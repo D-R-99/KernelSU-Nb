@@ -161,7 +161,7 @@ bool read_process_memory(
         }
     } 
     mmput(mm);
-    return true;
+    // return true;
     pa = translate_linear_address(mm, addr);
     if (!pa) {
         pr_err("read_process_memory pa failed.\n");
