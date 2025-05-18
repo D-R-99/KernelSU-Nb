@@ -135,12 +135,12 @@ bool read_process_memory(
         pr_err("read_process_memory pid_struct failed.\n");
         return false;
     }
-	task = get_pid_task(pid_struct, PIDTYPE_PID);
-	if (!task) {
+    task = get_pid_task(pid_struct, PIDTYPE_PID);
+    if (!task) {
         pr_err("read_process_memory task failed.\n");
         return false;
     }
-	mm = get_task_mm(task);
+    mm = get_task_mm(task);
     if (!mm) {
         pr_err("read_process_memory mm failed.\n");
         return false;
@@ -159,9 +159,9 @@ bool read_process_memory(
             // pr_err("read_process_memory vma failed.\n");
             return false;
         }
-    }
-    
+    } 
     mmput(mm);
+    return true;
     pa = translate_linear_address(mm, addr);
     if (!pa) {
         pr_err("read_process_memory pa failed.\n");
